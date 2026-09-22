@@ -61,12 +61,18 @@ services:
       # PORT rather than a literal: a hard-coded port here keeps answering from
       # inside the container after PORT changes, so the probe would report
       # healthy while nothing outside could reach the app.
+      #
+      # Concatenation and not a `${...}` template literal: Compose interpolates
+      # ${...} in this file before Docker ever sees it, so a template literal
+      # here is read as a Compose variable and fails the file with `invalid
+      # interpolation format`. Escaping it as $${...} would work too, but this
+      # keeps the probe readable as plain JS.
       test:
         [
           'CMD',
           'bun',
           '-e',
-          "fetch(`http://localhost:${process.env.PORT||3080}/api/health/ready`).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+          "fetch('http://localhost:'+(process.env.PORT||3080)+'/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 15s
       timeout: 5s
