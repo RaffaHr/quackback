@@ -47,7 +47,10 @@ services:
       # serve uploads through the app's /api/storage proxy.
       S3_PROXY: 'true'
     ports:
-      - '${APP_PORT:-1414}:3080'
+      # host:container. The right-hand side is the port the app BINDS inside the
+      # container — it is 3000 unless PORT says otherwise, so it is not a free
+      # choice. Only the left-hand side (APP_PORT) is yours to pick.
+      - '${APP_PORT:-1414}:3000'
     depends_on:
       postgres:
         condition: service_healthy
