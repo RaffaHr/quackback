@@ -92,28 +92,57 @@ services:
       timeout: 5s
       retries: 5
 
+  # Materializes the AIStor license: MINIO_LICENSE (from .env) becomes the file
+  # the server reads with --license. Must run BEFORE minio, hence a separate
+  # service. Required, not optional: without a valid license AIStor boots into
+  # offline mode and denies every S3 operation, so the app would come up but no
+  # upload or attachment would work.
+  minio-license:
+    image: quay.io/minio/aistor/mc:${MC_IMAGE_TAG:-RELEASE.2026-09-06T02-44-40Z}
+    container_name: quackback-minio-license
+    environment:
+      MINIO_LICENSE: ${MINIO_LICENSE:?set MINIO_LICENSE in .env}
+    entrypoint: >
+      /bin/sh -c "
+      printf '%s' \"$$MINIO_LICENSE\" > /license/minio.license
+      "
+    volumes:
+      - minio_license:/license
+    restart: 'no'
+
   minio:
-    image: minio/minio:${MINIO_IMAGE_TAG:-RELEASE.2025-04-22T22-12-26Z}
+    image: quay.io/minio/aistor/minio:${MINIO_IMAGE_TAG:-RELEASE.2026-09-07T08-39-31Z}
     container_name: quackback-minio
     restart: unless-stopped
+    depends_on:
+      minio-license:
+        condition: service_completed_successfully
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
     # No host port — object storage is internal; uploads are served via the app.
-    command: server /data
+    # No --console-address either: the admin console stays off in prod.
+    command: server /data --address ":9000" --license /license/minio.license
     volumes:
       - minio_data:/data
+      - minio_license:/license:ro
     healthcheck:
-      test: ['CMD', 'mc', 'ready', 'local']
+      # /ready and not /live: without a valid license the server stays alive and
+      # answers 200 on /live while denying 100% of S3 operations. Only /ready
+      # tells the two apart (200 licensed, 503 offline), so a mislicensed MinIO
+      # never reaches `healthy` and the app is held back instead of starting
+      # into broken uploads. start_period covers the first-boot pool format.
+      test: ['CMD-SHELL', 'curl -f http://localhost:9000/minio/health/ready || exit 1']
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 60s
 
   # Creates the upload bucket on first start. Unlike the dev stack it does NOT
   # set a public download policy — the bucket stays private and is served
   # through the app's /api/storage proxy (S3_PROXY=true above).
   minio-init:
-    image: minio/mc:${MC_IMAGE_TAG:-RELEASE.2025-04-16T18-13-26Z}
+    image: quay.io/minio/aistor/mc:${MC_IMAGE_TAG:-RELEASE.2026-09-06T02-44-40Z}
     container_name: quackback-minio-init
     depends_on:
       minio:
@@ -132,3 +161,5 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  # License file materialized by the minio-license service.
+  minio_license:
