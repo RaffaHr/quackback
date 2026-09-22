@@ -42,7 +42,7 @@ vi.mock('@/lib/server/logger', () => ({
 }))
 
 const BASE_ENV = {
-  BASE_URL: 'http://localhost:3000',
+  BASE_URL: 'http://localhost:3080',
   SECRET_KEY: 'x'.repeat(48),
 }
 

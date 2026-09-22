@@ -10,11 +10,11 @@
     {
       "name": "dev",
       "command": "bun run dev",
-      "description": "Quackback web app (TanStack Start) — http://localhost:3000"
+      "description": "Quackback web app (TanStack Start) — http://localhost:3080"
     }
   ],
   "ports": [
-    { "name": "web", "port": 3000 },
+    { "name": "web", "port": 3080 },
     { "name": "mailpit", "port": 8025 },
     { "name": "minio-console", "port": 9001 }
   ]

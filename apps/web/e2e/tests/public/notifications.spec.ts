@@ -16,7 +16,7 @@ test.describe('Portal Notifications (unauthenticated)', () => {
 
     if (!isOnNotifications) {
       // Hard redirect path: just verify we landed somewhere sensible (home or root)
-      expect(url).toMatch(/acme\.localhost:3000/)
+      expect(url).toMatch(/acme\.localhost:3080/)
     } else {
       // Soft-gate path: page renders but only shows a login prompt, not notification
       // content. Check that neither the notifications heading nor any notification

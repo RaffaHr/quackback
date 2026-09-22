@@ -15,7 +15,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { isPooledTenancy } from '../mode'
 
 function stubValidEnvFor(tenancy: string | undefined): void {
-  vi.stubEnv('BASE_URL', 'http://localhost:3000')
+  vi.stubEnv('BASE_URL', 'http://localhost:3080')
   vi.stubEnv('SECRET_KEY', 'a'.repeat(64))
   if (tenancy === undefined) vi.stubEnv('QUACKBACK_TENANCY', '')
   else vi.stubEnv('QUACKBACK_TENANCY', tenancy)

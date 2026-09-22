@@ -45,8 +45,8 @@ vi.mock('@/lib/server/db', async (importOriginal) => ({
 // config getters validate the full env (absent in tests); provide just what the
 // attachment/avatar URL checks read (same stub the sibling suites use).
 vi.mock('@/lib/server/config', () => ({
-  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3000' },
-  getBaseUrl: () => 'http://localhost:3000',
+  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3080' },
+  getBaseUrl: () => 'http://localhost:3080',
 }))
 
 // Neutralize the Postgres-backed realtime fan-out on BOTH channels (the ticket

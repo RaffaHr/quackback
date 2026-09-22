@@ -49,8 +49,8 @@ vi.mock('@/lib/server/domains/principals/blocking', () => blockingMock)
 // config getters validate the full env (absent in tests); provide just what the
 // attachment URL check reads.
 vi.mock('@/lib/server/config', () => ({
-  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3000' },
-  getBaseUrl: () => 'http://localhost:3000',
+  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3080' },
+  getBaseUrl: () => 'http://localhost:3080',
 }))
 
 vi.mock('../conversation.query', () => ({

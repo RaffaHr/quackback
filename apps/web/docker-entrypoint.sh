@@ -38,6 +38,6 @@ fi
 
 # Start the application
 echo ""
-echo "Starting Quackback server on port ${PORT:-3000}..."
+echo "Starting Quackback server on port ${PORT:-3080}..."
 echo "========================================"
 exec bun .output/server/index.mjs

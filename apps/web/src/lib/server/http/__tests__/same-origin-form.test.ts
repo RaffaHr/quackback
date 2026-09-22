@@ -11,7 +11,7 @@ describe('originMatchesRequestHost', () => {
   })
 
   it('accepts localhost http (self-host)', () => {
-    expect(originMatchesRequestHost('http://localhost:3000', 'localhost:3000')).toBe(true)
+    expect(originMatchesRequestHost('http://localhost:3080', 'localhost:3080')).toBe(true)
   })
 
   it('refuses a missing Origin, a foreign Origin, and a suffix host', () => {
@@ -31,7 +31,7 @@ describe('originMatchesRequestHost', () => {
     expect(
       originMatchesRequestHost(
         'https://south63792f.quackback.co.uk',
-        'south63792f.quackback.co.uk, 127.0.0.1:3000'
+        'south63792f.quackback.co.uk, 127.0.0.1:3080'
       )
     ).toBe(true)
   })

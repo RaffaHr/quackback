@@ -15,7 +15,7 @@
 // BASE_URL arrives as "/" under the test runner, which fails the URL check, so
 // force-set a valid value rather than conditionally defaulting it.
 process.env.SECRET_KEY = 'test-secret-key-that-is-at-least-32-characters-long'
-process.env.BASE_URL = 'http://localhost:3000'
+process.env.BASE_URL = 'http://localhost:3080'
 
 import { describe, it, expect } from 'vitest'
 import {

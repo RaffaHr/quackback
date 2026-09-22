@@ -213,8 +213,8 @@ produce a `PASS` on its own.
 
 ```bash
 bun apps/web/workspace-probe/cli.ts \
-  --alpha http://alpha.localhost:3000 \
-  --bravo http://bravo.localhost:3000 \
+  --alpha http://alpha.localhost:3080 \
+  --bravo http://bravo.localhost:3080 \
   --alpha-api-key qb_… --bravo-api-key qb_…
 ```
 

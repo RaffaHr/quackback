@@ -14,7 +14,7 @@
 
 // Satisfy the config schema the db layer validates on first access.
 process.env.SECRET_KEY = 'test-secret-key-that-is-at-least-32-characters-long'
-process.env.BASE_URL = 'http://localhost:3000'
+process.env.BASE_URL = 'http://localhost:3080'
 
 import { describe, it, expect } from 'vitest'
 import { db, eq, settings } from '@/lib/server/db'

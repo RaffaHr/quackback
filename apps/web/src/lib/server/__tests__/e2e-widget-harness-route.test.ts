@@ -24,7 +24,7 @@ describe('GET /e2e/widget', () => {
         options: { server: { handlers: { GET: (a: { request: Request }) => Promise<Response> } } }
       }
     ).options.server.handlers.GET
-    const res = await GET({ request: new Request('http://acme.localhost:3000/e2e/widget') })
+    const res = await GET({ request: new Request('http://acme.localhost:3080/e2e/widget') })
     expect(res.status).toBe(404)
   })
 })

@@ -2,7 +2,7 @@ import { test, expect, type Page, type BrowserContext, type Locator } from '@pla
 import { getOtpCode } from '../../utils/db-helpers'
 
 const TEST_EMAIL = 'demo@example.com'
-const TEST_HOST = 'acme.localhost:3000'
+const TEST_HOST = 'acme.localhost:3080'
 
 // Run serially to avoid OTP rate-limiting conflicts with other spec files
 test.describe.configure({ mode: 'serial' })

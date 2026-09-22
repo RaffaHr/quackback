@@ -88,7 +88,7 @@ describe('resolveHelpCenterDomainRedirect', () => {
     expect(
       resolveHelpCenterDomainRedirect({
         domainConfig: verifiedDomain,
-        currentHost: 'app.quackback.io:3000',
+        currentHost: 'app.quackback.io:3080',
         pathname: '/hc',
         search: '',
       })

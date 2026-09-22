@@ -19,7 +19,7 @@ quackback workspace-isolation probe
   bun apps/web/workspace-probe/cli.ts --alpha <url> --bravo <url> [options]
 
 Required
-  --alpha <url>              Base URL of the alpha workspace (e.g. http://alpha.localhost:3000)
+  --alpha <url>              Base URL of the alpha workspace (e.g. http://alpha.localhost:3080)
   --bravo <url>              Base URL of the bravo workspace
 
 Credentials (each unlocks probe families; missing ones produce BLOCKED, not skips)

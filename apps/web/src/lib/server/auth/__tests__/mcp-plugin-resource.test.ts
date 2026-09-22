@@ -15,8 +15,8 @@ describe('betterAuthMcpResource', () => {
   })
 
   it('collapses RFC 6761 *.localhost onto localhost for Better Auth 1.7.4', () => {
-    expect(betterAuthMcpResource('http://acme.localhost:3000/api/mcp')).toBe(
-      'http://localhost:3000/api/mcp'
+    expect(betterAuthMcpResource('http://acme.localhost:3080/api/mcp')).toBe(
+      'http://localhost:3080/api/mcp'
     )
   })
 })

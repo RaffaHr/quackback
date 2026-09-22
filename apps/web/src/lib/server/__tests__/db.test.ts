@@ -11,7 +11,7 @@ const originalEnv = { ...process.env }
 // Set up minimal config for tests
 function setupMinimalConfig() {
   process.env.DATABASE_URL = 'postgres://localhost/quackback'
-  process.env.BASE_URL = 'http://localhost:3000'
+  process.env.BASE_URL = 'http://localhost:3080'
   process.env.SECRET_KEY = 'test-secret-key-that-is-at-least-32-characters-long'
 }
 
@@ -78,7 +78,7 @@ describe('db module', () => {
 
     it('should throw error when DATABASE_URL not set', async () => {
       // Set up config without DATABASE_URL
-      process.env.BASE_URL = 'http://localhost:3000'
+      process.env.BASE_URL = 'http://localhost:3080'
       process.env.SECRET_KEY = 'test-secret-key-that-is-at-least-32-characters-long'
       delete (process.env as Record<string, string | undefined>).DATABASE_URL
 

@@ -337,7 +337,7 @@ describe('normalizeHostHeader', () => {
   it.each([
     ['ws-t1.quackback.co.uk', 'ws-t1.quackback.co.uk'],
     ['Ws-T1.Quackback.Co.Uk', 'ws-t1.quackback.co.uk'],
-    ['t1.localhost:3000', 't1.localhost'],
+    ['t1.localhost:3080', 't1.localhost'],
     ['t1.localhost.', 't1.localhost'],
     ['  t1.localhost  ', 't1.localhost'],
   ])('normalises %s', (input, expected) => {
@@ -350,7 +350,7 @@ describe('normalizeHostHeader', () => {
     ['an IPv6 literal', '[::1]'],
     ['a wildcard', '*.quackback.io'],
     ['empty', ''],
-    ['only a port', ':3000'],
+    ['only a port', ':3080'],
     ['a bare dot', '.'],
   ])('rejects %s rather than coercing it', (_label, input) => {
     expect(normalizeHostHeader(input)).toBeNull()
