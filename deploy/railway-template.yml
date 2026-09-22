@@ -36,7 +36,7 @@ services:
       DATABASE_URL: postgresql://quackback:${{postgres.POSTGRES_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/quackback
       SECRET_KEY: ${{secret(64)}}
       BASE_URL: https://${{RAILWAY_PUBLIC_DOMAIN}}
-      PORT: '3000'
+      PORT: '3080'
       NODE_ENV: production
       S3_ENDPOINT: ${{Bucket.ENDPOINT}}
       S3_BUCKET: ${{Bucket.BUCKET}}
