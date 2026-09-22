@@ -153,7 +153,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: true,
-      port: Number(process.env.PORT || 3000),
+      port: Number(process.env.PORT || 3080),
       // Without this, a taken port silently bumps to the next free one while
       // BASE_URL/TRUSTED_ORIGINS (and every cookie/CORS check derived from
       // them) still point at the original port — fail loudly instead.

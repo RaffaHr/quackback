@@ -16,7 +16,7 @@ bun run setup
 bun run dev
 ```
 
-Open http://localhost:3000 to see the app.
+Open http://localhost:3080 to see the app.
 
 ## Working in a Git Worktree
 

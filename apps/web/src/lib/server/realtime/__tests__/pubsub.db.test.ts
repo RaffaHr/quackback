@@ -20,7 +20,7 @@ vi.stubEnv(
   'DATABASE_URL',
   process.env.DATABASE_URL ?? 'postgresql://postgres:password@localhost:5432/quackback_test'
 )
-vi.stubEnv('BASE_URL', 'http://localhost:3000')
+vi.stubEnv('BASE_URL', 'http://localhost:3080')
 vi.stubEnv('SECRET_KEY', 'test-secret-key-0123456789abcdef0123456789abcdef')
 
 import {

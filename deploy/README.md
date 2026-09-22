@@ -20,7 +20,7 @@ Deploy Quackback on your own infrastructure with full control over your data.
 ```bash
 docker run -d \
   --name quackback \
-  -p 3000:3000 \
+  -p 3080:3080 \
   -e DATABASE_URL="postgresql://user:pass@host:5432/quackback" \
   -e SECRET_KEY="your-secret-32-chars-minimum" \
   -e BASE_URL="https://your-domain.com" \

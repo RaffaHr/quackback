@@ -23,8 +23,8 @@ vi.mock('@/lib/server/db', async (importOriginal) => ({
 // image-src trust check (isTrustedAttachmentUrl) reads so a same-origin
 // `/api/storage/...` src resolves as trusted.
 vi.mock('@/lib/server/config', () => ({
-  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3000' },
-  getBaseUrl: () => 'http://localhost:3000',
+  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3080' },
+  getBaseUrl: () => 'http://localhost:3080',
 }))
 
 import { createDbTestFixture, testDb } from '@/lib/server/__tests__/db-test-fixture'

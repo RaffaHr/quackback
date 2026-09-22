@@ -53,4 +53,4 @@ echo "[start] Applying migrations (dev + test databases)..."
 DATABASE_URL="$DB_URL_DEV" bun run db:migrate
 DATABASE_URL="$DB_URL_TEST" bun run db:migrate
 
-echo "[start] Ready. Run 'bun run db:seed' for demo data; 'bun run dev' serves http://localhost:3000"
+echo "[start] Ready. Run 'bun run db:seed' for demo data; 'bun run dev' serves http://localhost:3080"

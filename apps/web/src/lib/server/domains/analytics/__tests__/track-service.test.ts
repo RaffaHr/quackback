@@ -51,7 +51,7 @@ function makeRequest(
 ): Request {
   const h = new Headers(headers)
   if (ua) h.set('user-agent', ua)
-  return new Request('http://localhost:3000/api/track', {
+  return new Request('http://localhost:3080/api/track', {
     method: 'POST',
     headers: h,
     body: typeof body === 'string' ? body : JSON.stringify(body),

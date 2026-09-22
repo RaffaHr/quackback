@@ -41,7 +41,7 @@ describe('e2e widget harness', () => {
   })
 
   it('mints a host page with an ssoToken for the customer persona', async () => {
-    const html = await mintE2eWidgetHtml('customer', 'http://acme.localhost:3000')
+    const html = await mintE2eWidgetHtml('customer', 'http://acme.localhost:3080')
     expect(html).toContain('jwt-for-e2e.customer@example.com')
     expect(html).toContain('/api/widget/sdk.js')
     expect(html).toContain("Quackback('init'")
@@ -49,7 +49,7 @@ describe('e2e widget harness', () => {
   })
 
   it('omits identity for the anon persona', async () => {
-    const html = await mintE2eWidgetHtml('anon', 'http://acme.localhost:3000')
+    const html = await mintE2eWidgetHtml('anon', 'http://acme.localhost:3080')
     expect(html).not.toContain('ssoToken')
   })
 })

@@ -28,8 +28,8 @@ vi.mock('@/lib/server/db', async (importOriginal) => ({
 // Same minimal config stub as the tickets-domain suites (author avatar
 // resolution reads it through loadAuthors -> getPublicUrlOrNull).
 vi.mock('@/lib/server/config', () => ({
-  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3000' },
-  getBaseUrl: () => 'http://localhost:3000',
+  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3080' },
+  getBaseUrl: () => 'http://localhost:3080',
 }))
 
 import { createDbTestFixture, testDb } from '@/lib/server/__tests__/db-test-fixture'

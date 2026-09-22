@@ -79,8 +79,8 @@ vi.mock('@/lib/server/events/scheduler', () => ({
   cancelScheduledDispatch: vi.fn().mockResolvedValue(undefined),
 }))
 vi.mock('@/lib/server/config', () => ({
-  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3000' },
-  getBaseUrl: () => 'http://localhost:3000',
+  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3080' },
+  getBaseUrl: () => 'http://localhost:3080',
 }))
 
 function baseEntry(overrides: Record<string, unknown> = {}) {
@@ -174,7 +174,7 @@ describe('notifyChangelogPublished (atomic claim)', () => {
     }
     expect(payload.contentHtml).toContain('<strong>bold</strong>')
     expect(payload.contentHtml).toContain(
-      'http://localhost:3000/api/storage/changelog-images/a.png?email=1'
+      'http://localhost:3080/api/storage/changelog-images/a.png?email=1'
     )
   })
 

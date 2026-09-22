@@ -140,7 +140,7 @@ describe('recordPageView page.visited hook', () => {
   function makeBeaconRequest(body: unknown): Request {
     const h = new Headers()
     h.set('user-agent', CHROME_UA)
-    return new Request('http://localhost:3000/api/track', {
+    return new Request('http://localhost:3080/api/track', {
       method: 'POST',
       headers: h,
       body: JSON.stringify(body),

@@ -24,8 +24,8 @@ vi.mock('@/lib/server/domains/tickets/ticket.webhooks', () => ({
 // config getters validate the full env (absent in tests); the ticket create
 // path's attachment-url check only reads these two.
 vi.mock('@/lib/server/config', () => ({
-  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3000' },
-  getBaseUrl: () => 'http://localhost:3000',
+  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3080' },
+  getBaseUrl: () => 'http://localhost:3080',
 }))
 // Neutralize the ticket domain's realtime publish (unified inbox §3.2, M3):
 // createTicket/setTicketStatus now fire it too, and it would otherwise touch

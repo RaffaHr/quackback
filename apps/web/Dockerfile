@@ -134,8 +134,8 @@ ENV BUN_INSTALL_CACHE_DIR=/app/.cache
 # Migrations folder location (consumed by migrate.mjs via MIGRATIONS_FOLDER env)
 ENV MIGRATIONS_FOLDER=/app/drizzle
 
-EXPOSE 3000
-ENV PORT=3000
+EXPOSE 3080
+ENV PORT=3080
 ENV HOSTNAME="0.0.0.0"
 
 # Default behavior: run migrations on startup. K8s deployments should set

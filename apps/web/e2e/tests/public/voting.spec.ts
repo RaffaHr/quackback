@@ -2,7 +2,7 @@ import { test, expect, Page, BrowserContext } from '@playwright/test'
 import { getOtpCode } from '../../utils/db-helpers'
 
 const TEST_EMAIL = 'demo@example.com'
-const TEST_HOST = 'acme.localhost:3000'
+const TEST_HOST = 'acme.localhost:3080'
 
 /**
  * Helper to authenticate a user via OTP flow
@@ -433,7 +433,7 @@ test.describe('Voting — independence and persistence', () => {
     const { getOtpCode } = await import('../../utils/db-helpers')
 
     const TEST_EMAIL = 'demo@example.com'
-    const TEST_HOST = 'acme.localhost:3000'
+    const TEST_HOST = 'acme.localhost:3080'
 
     const sendResponse = await page.request.post('/api/auth/email-otp/send-verification-otp', {
       headers: { 'Content-Type': 'application/json' },

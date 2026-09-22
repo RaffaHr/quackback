@@ -74,7 +74,7 @@ export default defineConfig({
           .filter((key) => process.env[key] !== undefined)
           .map((key) => [key, process.env[key]!])
       ),
-      BASE_URL: process.env.BASE_URL ?? dotenv.BASE_URL ?? 'http://localhost:3000',
+      BASE_URL: process.env.BASE_URL ?? dotenv.BASE_URL ?? 'http://localhost:3080',
     },
   },
   esbuild: {

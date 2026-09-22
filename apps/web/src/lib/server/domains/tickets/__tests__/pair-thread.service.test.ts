@@ -29,8 +29,8 @@ vi.mock('@/lib/server/db', async (importOriginal) => ({
 // ticket-message.service.test.ts's minimal stub (author avatar resolution
 // reads it through loadAuthors -> getPublicUrlOrNull).
 vi.mock('@/lib/server/config', () => ({
-  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3000' },
-  getBaseUrl: () => 'http://localhost:3000',
+  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3080' },
+  getBaseUrl: () => 'http://localhost:3080',
 }))
 
 // The assistant-principal lookup is memoized process-wide (60s null caching),

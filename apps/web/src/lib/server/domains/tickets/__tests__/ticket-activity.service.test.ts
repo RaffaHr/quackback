@@ -46,8 +46,8 @@ vi.mock('@/lib/server/realtime/conversation-channels', () => realtime)
 
 // config getters validate the full env (absent in tests).
 vi.mock('@/lib/server/config', () => ({
-  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3000' },
-  getBaseUrl: () => 'http://localhost:3000',
+  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3080' },
+  getBaseUrl: () => 'http://localhost:3080',
 }))
 
 import { recordTicketActivity, listTicketActivity } from '../ticket-activity.service'

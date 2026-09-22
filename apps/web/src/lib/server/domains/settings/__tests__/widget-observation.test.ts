@@ -52,7 +52,7 @@ describe('widget installation observation', () => {
       externalWidgetOriginHostname(
         request('https://docs.example.com', undefined, {
           host: 'app.quackback.test',
-          url: 'http://127.0.0.1:3000/api/widget/config.json',
+          url: 'http://127.0.0.1:3080/api/widget/config.json',
         })
       )
     ).toBe('docs.example.com')
@@ -60,7 +60,7 @@ describe('widget installation observation', () => {
       externalWidgetOriginHostname(
         request('http://127.0.0.1:8766', undefined, {
           host: 'app.quackback.test',
-          url: 'http://127.0.0.1:3000/api/widget/config.json',
+          url: 'http://127.0.0.1:3080/api/widget/config.json',
         })
       )
     ).toBe('127.0.0.1')

@@ -20,7 +20,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 
 // Config mock
 vi.mock('@/lib/server/config', () => ({
-  config: { baseUrl: 'http://localhost:3000' },
+  config: { baseUrl: 'http://localhost:3080' },
 }))
 
 // Audit log mock

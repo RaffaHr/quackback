@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest'
 // check), which reads `config` — provide a valid base (the full env isn't loaded
 // in unit tests). Mirrors the conversation-send-service test's config mock.
 vi.mock('@/lib/server/config', () => ({
-  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3000' },
+  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3080' },
 }))
 
 import { sanitizeTiptapContent } from '../sanitize-tiptap'

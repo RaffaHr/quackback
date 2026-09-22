@@ -42,8 +42,8 @@ vi.mock('@/lib/server/db', async (importOriginal) => ({
 // config getters validate the full env (absent in tests); mirror the sibling
 // convergence suites' minimal stub.
 vi.mock('@/lib/server/config', () => ({
-  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3000' },
-  getBaseUrl: () => 'http://localhost:3000',
+  config: { s3PublicUrl: undefined, baseUrl: 'http://localhost:3080' },
+  getBaseUrl: () => 'http://localhost:3080',
 }))
 
 // Neutralize the Postgres-backed realtime fan-out on BOTH channels (the ticket

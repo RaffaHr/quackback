@@ -29,7 +29,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * unrelated to what it is testing.
  */
 function stubBaseEnv(): void {
-  vi.stubEnv('BASE_URL', 'http://localhost:3000')
+  vi.stubEnv('BASE_URL', 'http://localhost:3080')
   vi.stubEnv('SECRET_KEY', 'a'.repeat(64))
 }
 

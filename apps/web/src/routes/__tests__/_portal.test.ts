@@ -106,7 +106,7 @@ function makeContext(sessionUser?: {
       : null,
     settings: null,
     userRole: null as 'admin' | 'member' | 'user' | null,
-    baseUrl: 'http://localhost:3000',
+    baseUrl: 'http://localhost:3080',
     themeCookie: 'system' as const,
     managedFieldPaths: [],
     state: 'active' as const,

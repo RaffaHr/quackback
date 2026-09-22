@@ -47,21 +47,26 @@ services:
       # serve uploads through the app's /api/storage proxy.
       S3_PROXY: 'true'
     ports:
-      - '${APP_PORT:-1414}:3080'
+      # host:container. The right-hand side must match the port the app BINDS
+      # inside the container, which is PORT (3080 by default in the image).
+      # Only the left-hand side (APP_PORT) is a free choice.
+      - '${APP_PORT:-3080}:${PORT:-3080}'
     depends_on:
       postgres:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
     healthcheck:
-      # Use Bun (always in the image) so we don't depend on curl/wget. The
-      # container listens on 3000 regardless of the published APP_PORT.
+      # Use Bun (always in the image) so we don't depend on curl/wget. Probes
+      # PORT rather than a literal: a hard-coded port here keeps answering from
+      # inside the container after PORT changes, so the probe would report
+      # healthy while nothing outside could reach the app.
       test:
         [
           'CMD',
           'bun',
           '-e',
-          "fetch('http://localhost:3000/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+          "fetch(`http://localhost:${process.env.PORT||3080}/api/health/ready`).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 15s
       timeout: 5s

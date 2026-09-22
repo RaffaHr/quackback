@@ -15,7 +15,7 @@ import {
 } from '@quackback/ids'
 import type { Actor } from '@/lib/server/policy/types'
 
-if (!process.env.BASE_URL?.startsWith('http')) process.env.BASE_URL = 'http://localhost:3000'
+if (!process.env.BASE_URL?.startsWith('http')) process.env.BASE_URL = 'http://localhost:3080'
 process.env.SECRET_KEY ??= 'test-secret-key-with-at-least-32-characters'
 
 import {

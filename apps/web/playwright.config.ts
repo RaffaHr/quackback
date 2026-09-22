@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://acme.localhost:3000'
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://acme.localhost:3080'
 
 /**
  * Playwright configuration for Quackback E2E tests
@@ -101,7 +101,7 @@ export default defineConfig({
     // Bind every interface and wait on the health probe. Vite's default
     // localhost can be IPv6-only, and the first homepage request can 503
     // while Nitro is still coming up (`Vite environment "nitro" is unavailable`).
-    command: 'bun --env-file=../../.env vite dev --host 0.0.0.0 --port 3000',
+    command: 'bun --env-file=../../.env vite dev --host 0.0.0.0 --port 3080',
     url: `${baseURL}/api/health/ready`,
     reuseExistingServer: process.env.PLAYWRIGHT_REUSE_SERVER === '1' || !process.env.CI,
     timeout: 180 * 1000,

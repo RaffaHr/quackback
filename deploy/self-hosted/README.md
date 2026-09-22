@@ -37,7 +37,7 @@ docker compose -f docker-compose.prod.yml up -d
 docker compose -f docker-compose.prod.yml logs -f
 ```
 
-Open http://localhost:3000 to access Quackback.
+Open http://localhost:3080 to access Quackback.
 
 > The root `docker-compose.yml` is **development infrastructure only** (no app service, insecure defaults, world-readable bucket). Always use `docker-compose.prod.yml` for self-hosting.
 
@@ -46,7 +46,7 @@ Open http://localhost:3000 to access Quackback.
 ```bash
 docker run -d \
   --name quackback \
-  -p 3000:3000 \
+  -p 3080:3080 \
   -e DATABASE_URL="postgresql://user:pass@host:5432/quackback" \
   -e SECRET_KEY="your-secret-key-at-least-32-chars" \
   -e BASE_URL="https://your-domain.com" \
@@ -95,7 +95,7 @@ docker pull ghcr.io/quackbackio/quackback:latest-enterprise
 
 | Variable                           | Description                                                                                                                                                                                                                                                | Default      |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| `PORT`                             | Server port                                                                                                                                                                                                                                                | `3000`       |
+| `PORT`                             | Server port                                                                                                                                                                                                                                                | `3080`       |
 | `NODE_ENV`                         | Environment                                                                                                                                                                                                                                                | `production` |
 | `QUACKBACK_ROLE`                   | Process role: `all`, `web`, or `worker` (see [Scaling Out](#scaling-out))                                                                                                                                                                                  | `all`        |
 | `SKIP_MIGRATIONS`                  | Skip the startup migration step (run migrations out-of-band instead)                                                                                                                                                                                       | `false`      |
@@ -203,7 +203,7 @@ bun run setup
 # Start development server
 bun run dev
 
-# Open http://localhost:3000
+# Open http://localhost:3080
 ```
 
 ---
@@ -230,7 +230,7 @@ server {
     client_max_body_size 110m;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:3080;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -251,7 +251,7 @@ body limit above 100 MB as well. Image uploads remain limited to 5 MB.
 
 ```
 feedback.yourcompany.com {
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:3080
 }
 ```
 
@@ -288,7 +288,7 @@ Run at least one `worker` replica (or use `all`) at all times, or background job
 
 ### Docker Compose Example
 
-The datastores (Postgres, MinIO) are the same as in `docker-compose.prod.yml`. The app splits into a scaled `web` service and a `worker` service running the same image. Web replicas cannot each publish port 3000 on the host, so run a reverse proxy or load balancer (see [Reverse Proxy](#reverse-proxy)) in front of the `web` service and let Compose's internal DNS balance across replicas.
+The datastores (Postgres, MinIO) are the same as in `docker-compose.prod.yml`. The app splits into a scaled `web` service and a `worker` service running the same image. Web replicas cannot each publish port 3080 on the host, so run a reverse proxy or load balancer (see [Reverse Proxy](#reverse-proxy)) in front of the `web` service and let Compose's internal DNS balance across replicas.
 
 ```yaml
 services:
@@ -359,7 +359,7 @@ Enterprise features require a license key:
 ```bash
 docker run -d \
   --name quackback \
-  -p 3000:3000 \
+  -p 3080:3080 \
   -e DATABASE_URL="postgresql://..." \
   -e SECRET_KEY="..." \
   -e QUACKBACK_LICENSE_KEY="your-license-key" \
@@ -438,7 +438,7 @@ Common issues:
 
 - Missing required environment variables
 - Database connection failed
-- Port 3000 already in use
+- Port 3080 already in use
 
 ### Database Connection Failed
 

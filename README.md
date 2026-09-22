@@ -77,7 +77,7 @@ git clone https://github.com/QuackbackIO/quackback.git
 cd quackback
 cp .env.example .env   # Edit with your configuration
 docker build -t quackback -f apps/web/Dockerfile .
-docker run -p 3000:3000 --env-file .env quackback
+docker run -p 3080:3080 --env-file .env quackback
 ```
 
 Requires PostgreSQL. Set all variables in the canonical [runtime configuration table](docs/configuration.md). Migrations run automatically on startup.
@@ -101,7 +101,7 @@ git clone https://github.com/QuackbackIO/quackback.git
 cd quackback
 bun run setup    # Install deps, start Docker, run migrations
 bun run db:seed  # Optional: seed demo data
-bun run dev      # http://localhost:3000
+bun run dev      # http://localhost:3080
 ```
 
 Log in with `demo@example.com` / `password`.

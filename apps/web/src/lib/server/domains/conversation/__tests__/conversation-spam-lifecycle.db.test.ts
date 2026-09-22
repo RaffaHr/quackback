@@ -10,7 +10,7 @@ import type { Actor } from '@/lib/server/policy/types'
 // Vite pins process.env.BASE_URL to the router base ('/'), which the server
 // config's URL validation rejects; the lazy config must validate before the
 // db probe below can run. Real env always wins when present.
-if (!process.env.BASE_URL?.startsWith('http')) process.env.BASE_URL = 'http://localhost:3000'
+if (!process.env.BASE_URL?.startsWith('http')) process.env.BASE_URL = 'http://localhost:3080'
 process.env.SECRET_KEY ??= 'test-secret-key-with-at-least-32-characters'
 
 vi.mock('../conversation.webhooks', () => ({
