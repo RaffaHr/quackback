@@ -5,7 +5,7 @@
  * next hourly tick, and a migrator-stage failure must fail the job (sweep
  * bodies already log-and-continue).
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const TWENTY_THREE_HOURS = 23 * 60 * 60 * 1000
 
@@ -122,6 +122,9 @@ function reject(label: string) {
 }
 
 beforeEach(() => {
+  // The migrator stage is pooled-only, so the fleet assertions below need a
+  // pooled process. The single-tenancy skip is pinned in its own test.
+  vi.stubEnv('QUACKBACK_TENANCY', 'pooled')
   lockNow.ms = 1_700_000_000_000
   lockStore.clear()
   for (const fn of [
@@ -146,6 +149,10 @@ beforeEach(() => {
     fn.mockResolvedValue(fn === runReconcilePass ? emptyPass() : undefined)
   }
   enrolActiveWorkspaces.mockResolvedValue(0)
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
 })
 
 describe('housekeeping', () => {
@@ -201,6 +208,21 @@ describe('housekeeping', () => {
     expect(runReconcilePass).toHaveBeenCalledWith(
       expect.objectContaining({ concurrency: 4, leaseMs: 900_000 })
     )
+  })
+
+  it('skips the migrator stage under single tenancy, without failing the job', async () => {
+    // A single-workspace install has no control database to enumerate: the
+    // registry read throws `QUACKBACK_CONTROL_DATABASE_URL is not set`. It used
+    // to reach that throw on every tick — hourly here, and every hour on the
+    // worker timer, where the bare `void` turned it into an unhandled rejection.
+    vi.stubEnv('QUACKBACK_TENANCY', 'single')
+
+    expect(await runFleetCronJob('housekeeping')).toBe(true)
+    expect(enrolActiveWorkspaces).not.toHaveBeenCalled()
+    expect(runReconcilePass).not.toHaveBeenCalled()
+    // The rest of housekeeping still runs — the skip is the migrator only.
+    expect(sweepExpiredKv).toHaveBeenCalledOnce()
+    expect(pruneAuditLog).toHaveBeenCalledOnce()
   })
 
   it('log-and-continues sweep-body failures and still succeeds when the migrator does', async () => {

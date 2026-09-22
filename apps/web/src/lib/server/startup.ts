@@ -323,8 +323,17 @@ function startBackgroundProcessing(): void {
       setTimeout(() => void jobs.runStatusMaintenanceSweep(), 31_000)
       setInterval(() => void jobs.runStatusMaintenanceSweep(), 5 * 60 * 1000)
 
-      setTimeout(() => void jobs.runFleetMigratorPass(), 90_000)
-      setInterval(() => void jobs.runFleetMigratorPass(), 60 * 60 * 1000)
+      // Pooled-only work, but the gate lives in the body (`fleet-jobs.ts`), not
+      // here: the cron entrypoint reaches the same pass through `housekeeping`.
+      // Logged rather than bare `void` because, unlike the sweeps above, this
+      // body throws by design when a workspace fails to reconcile.
+      const fleetMigratorPass = () => {
+        void jobs.runFleetMigratorPass().catch((err) => {
+          log.error({ err }, 'fleet migrator pass failed')
+        })
+      }
+      setTimeout(fleetMigratorPass, 90_000)
+      setInterval(fleetMigratorPass, 60 * 60 * 1000)
 
       log.info({ event: 'sweeps.armed' }, 'scheduled sweeps armed')
     })

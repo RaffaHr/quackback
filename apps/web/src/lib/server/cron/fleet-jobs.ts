@@ -163,6 +163,23 @@ export async function runStatusMaintenanceSweep(): Promise<void> {
  * stops two replicas from both enumerating the fleet at once.
  */
 export async function runFleetMigratorPass(): Promise<void> {
+  // Pooled-only: the pass enumerates the fleet out of the control database, and
+  // `QUACKBACK_CONTROL_DATABASE_URL` is legitimately unset under single tenancy
+  // (config.ts only requires it when QUACKBACK_TENANCY=pooled). A single-
+  // workspace install has one database, migrated by the ordinary migrate path,
+  // so there is no fleet to converge — without this guard every tick threw
+  // `the workspace registry cannot be read` on both the worker timer and the
+  // `housekeeping` cron job.
+  //
+  // `isPooledTenancy()` over `config.isPooledTenancy` to match `withSweepLock`
+  // below: reading the one variable keeps an unrelated missing env var from
+  // surfacing here as a migrator failure (see `workspaces/mode.ts`).
+  const { isPooledTenancy } = await import('@/lib/server/workspaces/mode')
+  if (!isPooledTenancy()) {
+    log.debug({ event: 'fleet_migrator.skipped' }, 'single tenancy — no fleet to converge')
+    return
+  }
+
   const { withSweepLock } = await import('@/lib/server/sweep-lock')
   await withSweepLock('fleet_migrator', ONE_HOUR, async () => {
     const [{ enrolActiveWorkspaces, runReconcilePass }, { hostname }, { randomUUID }] =
