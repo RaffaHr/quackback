@@ -34,10 +34,34 @@ services:
       timeout: 5s
       retries: 5
 
+  # Materializa a licença do AIStor: MINIO_LICENSE (do .env) vira o arquivo que
+  # o server lê com --license. Precisa rodar ANTES do minio, por isso é um
+  # serviço separado. Sem licença válida o AIStor sobe em offline mode e nega
+  # toda operação S3 — o app abre, mas nenhum upload funciona.
+  minio-license:
+    image: quay.io/minio/aistor/mc:RELEASE.2026-09-06T02-44-40Z
+    container_name: quackback-minio-license
+    environment:
+      MINIO_LICENSE: ${MINIO_LICENSE:-}
+    entrypoint: >
+      /bin/sh -c "
+        if [ -z \"$${MINIO_LICENSE}\" ]; then
+          echo 'AVISO: MINIO_LICENSE vazia no .env — o AIStor sobe em offline mode e nega toda operacao S3.';
+        fi;
+        printf '%s' \"$${MINIO_LICENSE}\" > /license/minio.license;
+        echo 'licenca materializada em /license/minio.license'; exit 0;
+      "
+    volumes:
+      - minio_license:/license
+    restart: 'no'
+
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/aistor/minio:RELEASE.2026-09-07T08-39-31Z
     container_name: quackback-minio
     restart: unless-stopped
+    depends_on:
+      minio-license:
+        condition: service_completed_successfully
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
@@ -46,12 +70,18 @@ services:
       - '9001:9001'
     volumes:
       - minio_data:/data
-    command: server /data --console-address ":9001"
+      - minio_license:/license:ro
+    command: server /data --address ":9000" --console-address ":9001" --license /license/minio.license
     healthcheck:
-      test: ['CMD', 'mc', 'ready', 'local']
+      # /ready e não /live: sem licença válida o server continua vivo e responde
+      # 200 em /live enquanto nega 100% das operações S3. Só /ready distingue os
+      # dois casos (200 licenciado, 503 offline). start_period alto porque o
+      # primeiro boot formata o pool antes de abrir a porta.
+      test: ['CMD-SHELL', 'curl -f http://localhost:9000/minio/health/ready || exit 1']
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 60s
 
   mailpit:
     image: axllent/mailpit:latest
@@ -68,7 +98,7 @@ services:
 
   # Creates MinIO bucket and sets public download policy on startup
   minio-init:
-    image: minio/mc:latest
+    image: quay.io/minio/aistor/mc:RELEASE.2026-09-06T02-44-40Z
     container_name: quackback-minio-init
     depends_on:
       minio:
@@ -85,3 +115,5 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  # Arquivo de licença materializado pelo serviço minio-license.
+  minio_license:

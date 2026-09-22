@@ -80,7 +80,9 @@ echo -e "${GREEN}PostgreSQL is ready${NC}"
 # Wait for MinIO to be ready
 echo "Waiting for MinIO to be ready..."
 sleep 2
-until curl -sf http://localhost:9000/minio/health/live > /dev/null 2>&1; do
+# /ready e não /live: o AIStor responde 200 em /live mesmo sem licença válida,
+# enquanto nega toda operação S3. /ready só passa com a licença aceita.
+until curl -sf http://localhost:9000/minio/health/ready > /dev/null 2>&1; do
   sleep 1
 done
 echo -e "${GREEN}MinIO is ready (bucket 'quackback' configured automatically)${NC}"
