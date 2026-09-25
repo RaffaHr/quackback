@@ -1,7 +1,7 @@
 ---
 id: T-010
 title: Renovar webhooks dinâmicos do Jira antes dos 30 dias
-status: in-progress
+status: done
 blockedBy: []
 specRef: .specdriven/specs/SPEC-0001-multi-destino-trackers.md
 trackerRef: N/A
@@ -147,3 +147,48 @@ Sem a linha de `integration_sync_start`, 18 dos 23 testes de `provider-contracts
 vira `$12.000`, que em inglês se lê como doze dólares. O `$` também é fixo, independente da moeda real do deal.
 É bug de produto, dependente do locale do host, não artefato de teste. Não corrigido: fora do escopo de
 SPEC-0001 e a correção envolve decisão de produto (qual locale, e qual moeda).
+
+## Fechamento 2026-09-25 — re-registro de webhook perdido (critério 4)
+
+### Por que isto era o que faltava de verdade
+
+O sweep entregue antes renovava webhooks que ainda existem. Mas toda conexão Jira com mais de ~30 dias já teve o
+webhook expirado, e depois recolhido pelo Jira. Para ela a listagem volta vazia, o sweep reportava
+`nothing-to-refresh` como situação normal, e o painel de saúde ficava limpo. **Ou seja: para as instalações que o
+bug original já tinha atingido, a correção anterior não fazia nada.**
+
+### O que mudou
+
+- A capability `refresh` informa `liveWebhookIds` — os webhooks que o provider ainda tem para o app.
+- Com status sync ligado, se o `externalWebhookId` gravado **não** está entre os vivos, o sweep registra de novo,
+  pela mesma capability `register` e o mesmo `storeWebhookConfig` que o `enableStatusSyncFn` usa. Sem segundo
+  cliente do Jira.
+- Mantém o `webhookSecret` já gravado: o handler inbound exige um, e perder o webhook não é motivo para girá-lo.
+- Falha no re-registro vira `lastError` ("Webhook expired and could not be re-registered: ...").
+- Com status sync desligado, lista vazia continua sendo normal.
+
+**Efeito colateral conhecido:** gravar o novo id reescreve o `config`, e `canDispatchSync` trata isso como mudança —
+operações em voo daquela instalação naquele instante são canceladas. Acontece uma vez por webhook perdido, como
+reativar o status sync à mão.
+
+### Verificação
+
+`apps/web/src/lib/server/integrations/__tests__/webhook-refresh-queue.db.test.ts` — o sweep não tinha **nenhum**
+teste até aqui (era DB-bound e não havia Postgres). 5 casos: webhook vivo (renova, não registra), recolhido
+(registra de novo com o mesmo callback e filtro), outros vivos mas não o desta instalação, status sync desligado,
+e falha no re-registro visível no painel.
+
+- Vermelho antes: exatamente os 3 casos de re-registro.
+- **Um teste passou pelo motivo errado, e foi corrigido.** O caso "falha no re-registro" ficou verde enquanto a
+  causa real era `Configuration validation failed` — o `buildWebhookCallbackUrl` lê a config completa, que não
+  valida no ambiente de teste, e esse erro caía no mesmo `catch`. A asserção agora exige a rejeição do próprio Jira
+  (`Jira API error 403`). O teste fornece a URL de callback por mock; **a produção não foi alterada** para usar
+  `getBaseUrl()`, que engole a falha de config e registraria o webhook numa URL relativa em silêncio.
+- Controle positivo: com a detecção de perda desligada, **exatamente** os 3 casos de re-registro ficam vermelhos.
+- Suítes de `integrations` + `jobs` + providers: 744/745 (a falha é o HubSpot, pré-existente). `tsc` = baseline.
+
+### Critério 5
+
+Não há teste de relógio dedicado. A propriedade que ele pedia — a renovação acontecer antes dos 30 dias — é a
+cadência diária (`40 3 * * *`), pinada pelo `registry-doc.test.ts`; o agendador em si é coberto pelos testes
+genéricos de cron (`jobs/__tests__/cron-dst.test.ts`). Um teste dedicado repetiria os dois.

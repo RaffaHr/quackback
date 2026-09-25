@@ -398,12 +398,19 @@ export interface IntegrationDefinition {
          *
          * Returns rather than throws — this runs in a periodic sweep, and the
          * error text is what reaches `lastError` for the health panel.
+         *
+         * `liveWebhookIds` is every webhook the provider still has for this
+         * app. With it, the sweep can tell "nothing to refresh" apart from "the
+         * webhook this installation depends on is gone" — expired and harvested,
+         * or removed by hand — and register it again. Omit it only if the
+         * provider cannot list its webhooks; the sweep then cannot detect loss.
          */
         refresh?(params: {
           accessToken: string
           config: Record<string, unknown>
         }): Promise<
-          { status: 'refreshed' | 'nothing-to-refresh' } | { status: 'failed'; error: string }
+          | { status: 'refreshed' | 'nothing-to-refresh'; liveWebhookIds?: string[] }
+          | { status: 'failed'; error: string }
         >
       }
   /** Platform-level credential fields required to enable this integration. Use `[]` if none needed. */

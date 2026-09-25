@@ -50,7 +50,10 @@ export const jiraIntegration: IntegrationDefinition = {
     refresh: async ({ accessToken, config }) => {
       const cloudId = config.cloudId as string
       if (!cloudId) return { status: 'failed', error: 'No Jira Cloud ID configured' }
-      return refreshJiraWebhooks(accessToken, cloudId)
+      const result = await refreshJiraWebhooks(accessToken, cloudId)
+      if (result.status === 'failed') return result
+      // Ids are int64 on the wire and strings in config.externalWebhookId.
+      return { status: result.status, liveWebhookIds: result.webhookIds.map(String) }
     },
   },
   listExternalStatuses: fetchJiraStatuses,
