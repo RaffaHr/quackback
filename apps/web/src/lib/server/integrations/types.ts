@@ -390,6 +390,21 @@ export interface IntegrationDefinition {
           config: Record<string, unknown>
           externalWebhookId: string
         }): Promise<void>
+        /**
+         * Extend the life of registrations that expire on their own. Jira's
+         * dynamic webhooks die after 30 days unless refreshed, and the failure
+         * is silent: deliveries just stop. Declared per provider because most
+         * providers' webhooks do not expire at all.
+         *
+         * Returns rather than throws — this runs in a periodic sweep, and the
+         * error text is what reaches `lastError` for the health panel.
+         */
+        refresh?(params: {
+          accessToken: string
+          config: Record<string, unknown>
+        }): Promise<
+          { status: 'refreshed' | 'nothing-to-refresh' } | { status: 'failed'; error: string }
+        >
       }
   /** Platform-level credential fields required to enable this integration. Use `[]` if none needed. */
   platformCredentials: PlatformCredentialField[]

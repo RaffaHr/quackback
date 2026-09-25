@@ -4,6 +4,7 @@ import { fetchJiraStatuses } from '@/integrations/jira/server/statuses'
 import {
   registerJiraWebhook,
   deleteJiraWebhook,
+  refreshJiraWebhooks,
 } from '@/integrations/jira/server/webhook-registration'
 import { jiraHook } from '@/integrations/jira/server/hook'
 import { jiraInboundHandler } from '@/integrations/jira/server/inbound'
@@ -44,6 +45,12 @@ export const jiraIntegration: IntegrationDefinition = {
     unregister: async ({ accessToken, config, externalWebhookId }) => {
       const cloudId = config.cloudId as string
       if (cloudId) await deleteJiraWebhook(accessToken, cloudId, externalWebhookId)
+    },
+    // Dynamic webhooks expire 30 days after registration or the last refresh.
+    refresh: async ({ accessToken, config }) => {
+      const cloudId = config.cloudId as string
+      if (!cloudId) return { status: 'failed', error: 'No Jira Cloud ID configured' }
+      return refreshJiraWebhooks(accessToken, cloudId)
     },
   },
   listExternalStatuses: fetchJiraStatuses,
