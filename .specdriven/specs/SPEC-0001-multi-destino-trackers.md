@@ -100,23 +100,23 @@ Portanto `contractEvidence` é proibido no manifesto e o contract gate fica `N/A
 
 ### Decisões fechadas no INTAKE
 
-| Pergunta | Decisão |
-|---|---|
-| Multi-destino ou multi-instalação? | **Multi-destino numa instalação** (Opção A). UNIQUE permanece. |
-| Como o post escolhe o destino? | **Automático por board + escolha manual** no push. Sem regressão do automático. |
-| Como escopar por usuário? | **Por time**, ativando `principal_role_assignments.team_id`. |
+| Pergunta                           | Decisão                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------- |
+| Multi-destino ou multi-instalação? | **Multi-destino numa instalação** (Opção A). UNIQUE permanece.                  |
+| Como o post escolhe o destino?     | **Automático por board + escolha manual** no push. Sem regressão do automático. |
+| Como escopar por usuário?          | **Por time**, ativando `principal_role_assignments.team_id`.                    |
 
 ### Riscos
 
-| Risco | Impacto | Mitigação |
-|---|---|---|
-| **Falha silenciosa do status sync do Jira.** Se `destinationId` não for emitido, o fan-out não acha o link e nada acusa erro. | Alto — perda de dados sem sinal | Seam TDD obrigatório: teste red que prova que um webhook do projeto B encontra o link do projeto B antes de qualquer implementação. |
-| **Colisão de número de issue entre repositórios GitHub.** | Alto | Chave real passa a ser `(installation, destinationKey, externalId)`. Teste com o mesmo número em dois repositórios é critério de aceite. |
-| **Migração de links existentes.** `syncScope` já grava um hash do destino antigo; se o novo `destinationKey` for calculado de outra forma, todo link existente órfã. | Alto | A migração precisa preservar o `destinationKey` derivado do `config.channelId` atual, byte a byte. Teste de migração sobre fixture com links pré-existentes. |
-| **`canDispatchSync` cancelando operações alheias.** Hoje qualquer escrita no `config` invalida tudo em voo. | Médio | Destinos saem do `config`; o hash de estabilidade passa a cobrir só o que de fato invalida um despacho. |
-| **Regressão dos outros 8+ trackers** que compartilham `sync/`. | Alto | Os seams genéricos precisam manter o comportamento single-destination como caso degenerado. `sync/__tests__/provider-contracts.db.test.ts` é o pino. |
-| **Limites de webhook por repositório/projeto nas APIs externas** não verificados. | Médio | `researcher` contra documentação oficial do GitHub e do Jira Cloud antes de fechar o plano (T-002). |
-| **Escopo por time é uma fase nunca exercida do RBAC** (`team_id` sempre NULL hoje). | Médio | Tratar como trabalho próprio, com tickets separados, e não misturar com a entrega de multi-destino. |
+| Risco                                                                                                                                                                | Impacto                         | Mitigação                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Falha silenciosa do status sync do Jira.** Se `destinationId` não for emitido, o fan-out não acha o link e nada acusa erro.                                        | Alto — perda de dados sem sinal | Seam TDD obrigatório: teste red que prova que um webhook do projeto B encontra o link do projeto B antes de qualquer implementação.                          |
+| **Colisão de número de issue entre repositórios GitHub.**                                                                                                            | Alto                            | Chave real passa a ser `(installation, destinationKey, externalId)`. Teste com o mesmo número em dois repositórios é critério de aceite.                     |
+| **Migração de links existentes.** `syncScope` já grava um hash do destino antigo; se o novo `destinationKey` for calculado de outra forma, todo link existente órfã. | Alto                            | A migração precisa preservar o `destinationKey` derivado do `config.channelId` atual, byte a byte. Teste de migração sobre fixture com links pré-existentes. |
+| **`canDispatchSync` cancelando operações alheias.** Hoje qualquer escrita no `config` invalida tudo em voo.                                                          | Médio                           | Destinos saem do `config`; o hash de estabilidade passa a cobrir só o que de fato invalida um despacho.                                                      |
+| **Regressão dos outros 8+ trackers** que compartilham `sync/`.                                                                                                       | Alto                            | Os seams genéricos precisam manter o comportamento single-destination como caso degenerado. `sync/__tests__/provider-contracts.db.test.ts` é o pino.         |
+| **Limites de webhook por repositório/projeto nas APIs externas** não verificados.                                                                                    | Médio                           | `researcher` contra documentação oficial do GitHub e do Jira Cloud antes de fechar o plano (T-002).                                                          |
+| **Escopo por time é uma fase nunca exercida do RBAC** (`team_id` sempre NULL hoje).                                                                                  | Médio                           | Tratar como trabalho próprio, com tickets separados, e não misturar com a entrega de multi-destino.                                                          |
 
 ### Perguntas ainda abertas (não bloqueiam a spec; bloqueiam o plano)
 
@@ -226,3 +226,53 @@ convivendo — esta última rejeitada por ser precisamente o tipo de bifurcaçã
 15. Mudar o issue type de um issue Jira vinculado **não** quebra o status sync daquele link.
 16. Adicionar o sexto projeto Jira funciona — não existe caminho que tente registrar um sexto webhook.
 17. Durante a reescrita do filtro do webhook Jira, não há janela em que nenhum webhook esteja registrado.
+
+## Adendo 2026-09-23 — correções após o setup do projeto e o planejamento
+
+Quatro seções acima estão obsoletas ou erradas. Este adendo as supersede.
+
+### Consumidores e paridade — a matriz **não** é `N/A`
+
+A seção "Consumidores e paridade" foi escrita quando não havia `workflow.profile`. O projeto foi configurado em
+`2fb22d2a4`: `profile.consumers = ["web","widget","db"]` e `profile.parity.required = true`, com dimensões
+`contract-usage`, `states`, `routes` e `schema`. A matriz é obrigatória e foi produzida pelo planner no change
+record. `widget` é não-afetado **com evidência** (uma única ocorrência, em comentário, nos seus 16 arquivos de
+fonte), não por suposição.
+
+### Tracker — não é mais `N/A`
+
+O cabeçalho diz "Tracker ref: N/A (tracker não configurado)". O profile agora declara tracker **github** via `gh`,
+repositório `RaffaHr/quackback` (o fork; `origin` aponta para o upstream `QuackbackIO/quackback` e não recebe
+escrita do workflow). Spec e tickets **deveriam** estar publicados como issues pelo `tracker-agent`, e ainda não
+estão — lacuna registrada, não resolvida.
+
+### Correção de fato: `integration-ui-parity.test.tsx` não cobre o que eu afirmei
+
+A seção de paridade e o item de impacto de UI afirmam que esse teste pinaria a divergência entre as telas de
+configuração de GitHub e Jira. **Está errado** — e a mesma afirmação errada aparece em
+[R-0001](../research/R-0001-github-jira-multi-destino.md), seção "Impactos de UI".
+
+O teste cobre o _manifesto de apresentação_ (`INTEGRATION_UI`): ícones batendo com `INTEGRATION_ICON_MAP`, verbos
+e substantivos por provider. Não renderiza tela de configuração nenhuma. Consequência real: **a paridade entre as
+telas de GitHub e Jira não tem pino automático** e depende de revisão humana. O único ponto de contato do teste
+com esta mudança é `formatExternalId`, que provavelmente passa a produzir `owner/repo#142`.
+
+### D-7 — o push manual de post é capacidade nova (T-011)
+
+A spec assumia que "escolha manual de destino" seria um gate sobre um caminho existente. Não existe: o único
+caminho manual de post é `retryPostIntegrationSyncFn`, gated em `INTEGRATION_MANAGE`, que redespacha para **todos**
+os destinos resolvidos automaticamente e não aceita destino. O único caminho onde não-admins agem é ticket
+(`TICKET_ASSIGN`).
+
+Decisão do usuário em 2026-09-23: **construir a capacidade**, em [T-011](../tickets/T-011-push-manual-de-post.md),
+com permissão própria (não `INTEGRATION_MANAGE`) e gate por time de servidor. Sem T-011, o requisito original do
+pedido — escolher, por usuário, o destino de uma postagem — fica não atendido.
+
+### Critérios de aceite adicionais
+
+18. Uma pessoa sem `INTEGRATION_MANAGE`, com `TICKET_ASSIGN`, consegue empurrar um post para um destino dos seus
+    times, e é recusada no servidor ao pedir um destino fora deles.
+19. A migração de `sync_scope` do Jira preserva intactas as linhas `sync_scope = ''` (namespace de referência dos
+    apps de sidebar). Sem isso, `/api/v1/apps/linked` quebra e a classificação NO_API desta spec deixa de valer.
+20. A paridade entre as telas de configuração de GitHub e Jira é verificada — por teste novo ou por revisão
+    registrada —, já que nenhum teste existente a cobre.

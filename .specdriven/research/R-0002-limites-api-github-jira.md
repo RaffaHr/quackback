@@ -39,8 +39,8 @@ incluem `422 - Validation failed, or the endpoint has been spammed.`
 
 **A string `already exists` não aparece em nenhuma página oficial que consultei.** O regex
 `/already exists/i` em `apps/web/src/integrations/github/server/index.ts:66` casa com uma **mensagem de erro
-observada**, não com um contrato documentado. O que é documentado é a *regra* que a produz (config única com
-eventos sobrepostos) e o *status* (422), não o texto. Isso é frágil por duas razões: o texto pode mudar sem aviso, e
+observada**, não com um contrato documentado. O que é documentado é a _regra_ que a produz (config única com
+eventos sobrepostos) e o _status_ (422), não o texto. Isso é frágil por duas razões: o texto pode mudar sem aviso, e
 outros 422 de validação (ex.: URL inválida, limite de 20) caem no mesmo `catch` e hoje são corretamente re-lançados
 — mas só porque não contêm a frase. Um 422 cujo texto mudasse para algo com "already exists" em outro contexto
 entraria no caminho de recuperação errado.
@@ -137,8 +137,14 @@ ele não depende da Parte 1.
 O **próprio exemplo oficial** de `jira:issue_updated` mostra o changelog de uma mudança de tipo de issue:
 
 ```json
-{ "toString": "New Feature", "to": "2", "fromString": "Improvement", "from": "4",
-  "fieldtype": "jira", "field": "issuetype" }
+{
+  "toString": "New Feature",
+  "to": "2",
+  "fromString": "Improvement",
+  "from": "4",
+  "fieldtype": "jira",
+  "field": "issuetype"
+}
 ```
 
 Ou seja: a documentação primária demonstra que **o issue type de um issue muda ao longo da vida dele**, e que essa
@@ -148,7 +154,7 @@ mudança é exatamente um dos eventos que o Quackback recebe. O `issueTypeId` em
 Se o `destinationId` inbound for `projectId:issueTypeId`, então no instante em que alguém muda o tipo de um issue de
 Bug para Task, o handler passa a computar um `destinationId` diferente do gravado no link, o fan-out não acha o link,
 e **nada acusa erro** — exatamente o risco "Falha silenciosa do status sync do Jira" já registrado na SPEC-0001.
-A mudança de tipo *dispara* um `jira:issue_updated`, então o primeiro evento perdido é o da própria mudança.
+A mudança de tipo _dispara_ um `jira:issue_updated`, então o primeiro evento perdido é o da própria mudança.
 
 Reforço independente: o `jqlFilter` do registro é naturalmente escopado por `project`, e o teto de 5 webhooks (P2)
 empurra para `project IN (...)`. Um webhook filtrado por projeto não tem como garantir coerência com uma identidade
@@ -178,11 +184,11 @@ efeito é um repositório simplesmente não aparecer no seletor, e o admin não 
 **Parâmetros.** Todos os três já vêm no modo mais amplo por default, então o código atual (que não passa nenhum
 deles) **já obtém o conjunto máximo**:
 
-| Param | Default documentado | Valores |
-|---|---|---|
-| `visibility` | `all` | `all`, `public`, `private` |
-| `affiliation` | `owner,collaborator,organization_member` | lista separada por vírgula |
-| `type` | `all` | `all`, `owner`, `public`, `private`, `member` |
+| Param         | Default documentado                      | Valores                                       |
+| ------------- | ---------------------------------------- | --------------------------------------------- |
+| `visibility`  | `all`                                    | `all`, `public`, `private`                    |
+| `affiliation` | `owner,collaborator,organization_member` | lista separada por vírgula                    |
+| `type`        | `all`                                    | `all`, `owner`, `public`, `private`, `member` |
 
 `affiliation` — "Comma-separated list of values. Can include: `owner`: Repositories that are owned by the
 authenticated user. `collaborator`: Repositories that the user has been added to as a collaborator.
@@ -198,44 +204,44 @@ estão no máximo), e passar `type` junto com qualquer um dos dois é um 422 gar
 
 ## Evidências
 
-| Afirmação | Fonte (URL/doc/código) | Consultado em |
-|---|---|---|
-| P1 — "You can create multiple webhooks in a single repository. However, you can only create up to 20 webhooks that subscribe to each individual event type." | https://docs.github.com/en/webhooks/types-of-webhooks | 2026-09-22 |
-| P1 — "You can create up to 20 repository or organization webhooks for each event type. If you attempt to create more, you will receive an error stating that you cannot have more than 20 webhooks." | https://docs.github.com/en/webhooks/testing-and-troubleshooting-webhooks/troubleshooting-webhooks | 2026-09-22 |
-| P1 — "Repositories can have multiple webhooks installed. Each webhook should have a unique config. Multiple webhooks can share the same config as long as those webhooks do not have any events that overlap." | https://docs.github.com/en/rest/repos/webhooks?apiVersion=2022-11-28 | 2026-09-22 |
-| P1 — Create repository webhook documenta `422 - Validation failed, or the endpoint has been spammed.` (e 201/403/404) | https://docs.github.com/en/rest/repos/webhooks?apiVersion=2022-11-28 | 2026-09-22 |
-| P1 — Nenhuma página oficial consultada contém a string `already exists` para webhooks de repositório | https://docs.github.com/en/rest/repos/webhooks?apiVersion=2022-11-28 + https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks + https://docs.github.com/en/webhooks/about-webhooks | 2026-09-22 |
-| P1 — `admin:repo_hook` = "Grants read, write, ping, and delete access to repository hooks in public or private repositories."; `write:repo_hook` = "Grants read, write, and ping access to hooks..."; `read:repo_hook` = "Grants read and ping access to hooks..." | https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps | 2026-09-22 |
-| P1 — Escopo `repo` inclui "repository webhooks" | https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps | 2026-09-22 |
-| P1 — Config sub-endpoints: "OAuth app tokens and personal access tokens (classic) need the read:repo_hook or repo scope" / "...write:repo_hook or repo scope..." | https://docs.github.com/en/rest/repos/webhooks?apiVersion=2022-11-28 | 2026-09-22 |
-| P1 (contexto) — "OAuth apps cannot list, view, or edit webhooks that they did not create and users cannot list, view, or edit webhooks that were created by OAuth apps." (documentado para webhooks de **organização**) | https://docs.github.com/en/rest/orgs/webhooks?apiVersion=2022-11-28 | 2026-09-22 |
-| P1 — código atual: regex `/already exists/i` + `findGitHubWebhookByUrl` + `patchGitHubWebhook` | `apps/web/src/integrations/github/server/index.ts:62-68` | 2026-09-22 |
-| P2 — "A maximum of 100 webhooks per app per tenant is allowed for a Connect app. For an OAuth 2.0 app, the limit is 5 webhooks per app per user on a tenant." | https://developer.atlassian.com/cloud/jira/platform/webhooks/ | 2026-09-22 |
-| P2 — "The URL that specifies where to send the webhooks. This URL must use the same base URL as the Connect app. Only a single URL per app is allowed to be registered." (`WebhookRegistrationDetails.url`) | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`components.schemas.WebhookRegistrationDetails`) | 2026-09-22 |
-| P2 — `jqlFilter` obrigatório; "Fields: `issueKey`, `project`, `issuetype`, `status`, `assignee`, `reporter`, `issue.property`, and `cf[id]`... Operators: `=`, `!=`, `IN`, and `NOT IN`." | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`components.schemas.WebhookDetails`) | 2026-09-22 |
-| P2 — Mesma restrição de JQL, redigida na página de plataforma | https://developer.atlassian.com/cloud/jira/platform/webhooks/ | 2026-09-22 |
-| P2 — "Extends the life of webhook. Webhooks registered through the REST API expire after 30 days. Call this operation to keep them alive." (`PUT /rest/api/3/webhook/refresh`) | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/webhook/refresh.put`) | 2026-09-22 |
-| P2 — "The expiration period is 30 days from the time the webhook was created or refreshed..." / "Webhooks are available for up to 3 months after they expire." | https://developer.atlassian.com/cloud/jira/platform/webhooks/ | 2026-09-22 |
-| P2 — `security`/`x-atlassian-oauth2-scopes` = `read:jira-work` + `manage:jira-webhook` (Current) para register/get/delete/refresh; granulares Beta `write:webhook:jira`, `read:webhook:jira`, `delete:webhook:jira`, `read:field:jira`, `read:project:jira`, `read:jql:jira` | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/webhook`, `/rest/api/3/webhook/refresh`) | 2026-09-22 |
-| P2 — `manage:jira-webhook` = "Fetch, register, refresh, and delete dynamically declared Jira webhooks." | https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/ | 2026-09-22 |
-| P2 — `jira:issue_updated` requer `read:issue-details:jira` | https://developer.atlassian.com/cloud/jira/platform/webhooks/ | 2026-09-22 |
-| P2 — "NOTE: for non-public OAuth apps, webhooks are delivered only if there is a match between the app owner and the user who registered a dynamic webhook." | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/webhook.post.description`) | 2026-09-22 |
-| P2 — "Only webhooks registered by the calling app are removed. If webhooks created by other apps are specified, they are ignored." | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/webhook.delete.description`) | 2026-09-22 |
-| P2 — registro atual usa `project = ${projectRef}` e um `webhooks[0]` por chamada | `apps/web/src/integrations/jira/server/webhook-registration.ts:32-41` | 2026-09-22 |
-| P2 — não há chamada a `/rest/api/3/webhook/refresh` no repositório (só `refreshJiraToken`, OAuth token) | busca em `apps/web/src` e `packages` | 2026-09-22 |
-| P3 — exemplo publicado de `jira:issue_updated`: `issue.fields` contém apenas `summary`, `created`, `description`, `labels`, `priority` — **sem** `project` e **sem** `issuetype` | https://developer.atlassian.com/cloud/jira/platform/webhooks/ | 2026-09-22 |
-| P3 — "The same shape returned from the Jira REST API when an issue is retrieved with NO expand parameters." | https://developer.atlassian.com/cloud/jira/platform/webhooks/ | 2026-09-22 |
-| P3 — `getIssue`, parâmetro `fields`: `default: "*all"`, "`*all` Returns all fields." e "Note: All fields are returned by default." | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/issue/{issueIdOrKey}.get.parameters[fields]`) | 2026-09-22 |
-| P3 — `project` e `issuetype` são campos de `fields` endereçados por `id`: exemplo oficial de `createIssue` traz `"project": {"id": "10000"}` e `"issuetype": {"id": "10000"}` | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/issue.post.requestBody.example`) | 2026-09-22 |
-| P3 — `IssueBean.fields` é mapa livre (`{"additionalProperties": {}, "type": "object"}`): o contrato oficial não enumera os campos da resposta | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`components.schemas.IssueBean`) | 2026-09-22 |
-| P3 — o exemplo oficial de `jira:issue_updated` mostra changelog de **mudança de issue type**: `{"toString":"New Feature","to":"2","fromString":"Improvement","from":"4","fieldtype":"jira","field":"issuetype"}` | https://developer.atlassian.com/cloud/jira/platform/webhooks/ | 2026-09-22 |
-| P3 — destino Jira é hoje `projectId:issueTypeId`; handler inbound lê apenas `payload.issue.key` e não emite destino | `apps/web/src/integrations/jira/server/hook.ts:19-28`, `issues.ts:64-74`, `inbound.ts:66-72` | 2026-09-22 |
-| P4 — `per_page`: "The number of results per page (max 100)", default `30`; `page` default `1` | https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user | 2026-09-22 |
-| P4 — `visibility` default `all`; `affiliation` default `owner,collaborator,organization_member`; `type` default `all` | https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user | 2026-09-22 |
-| P4 — `type`: "Will cause a 422 error if used in the same request as visibility or affiliation." | https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user | 2026-09-22 |
-| P4 — header `link` com `rel` `next`/`prev`/`first`/`last`; "You can use the URLs from the `link` header to request another page of results." | https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28 | 2026-09-22 |
-| P4 — "If you specify a value greater than the maximum, GitHub does not return an error. Instead, the value is automatically reduced to the maximum." | https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28 | 2026-09-22 |
-| P4 — chamada única sem paginação, header `link` ignorado | `apps/web/src/integrations/github/server/repos.ts:13-36` | 2026-09-22 |
+| Afirmação                                                                                                                                                                                                                                                                    | Fonte (URL/doc/código)                                                                                                                                                                           | Consultado em |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| P1 — "You can create multiple webhooks in a single repository. However, you can only create up to 20 webhooks that subscribe to each individual event type."                                                                                                                 | https://docs.github.com/en/webhooks/types-of-webhooks                                                                                                                                            | 2026-09-22    |
+| P1 — "You can create up to 20 repository or organization webhooks for each event type. If you attempt to create more, you will receive an error stating that you cannot have more than 20 webhooks."                                                                         | https://docs.github.com/en/webhooks/testing-and-troubleshooting-webhooks/troubleshooting-webhooks                                                                                                | 2026-09-22    |
+| P1 — "Repositories can have multiple webhooks installed. Each webhook should have a unique config. Multiple webhooks can share the same config as long as those webhooks do not have any events that overlap."                                                               | https://docs.github.com/en/rest/repos/webhooks?apiVersion=2022-11-28                                                                                                                             | 2026-09-22    |
+| P1 — Create repository webhook documenta `422 - Validation failed, or the endpoint has been spammed.` (e 201/403/404)                                                                                                                                                        | https://docs.github.com/en/rest/repos/webhooks?apiVersion=2022-11-28                                                                                                                             | 2026-09-22    |
+| P1 — Nenhuma página oficial consultada contém a string `already exists` para webhooks de repositório                                                                                                                                                                         | https://docs.github.com/en/rest/repos/webhooks?apiVersion=2022-11-28 + https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks + https://docs.github.com/en/webhooks/about-webhooks | 2026-09-22    |
+| P1 — `admin:repo_hook` = "Grants read, write, ping, and delete access to repository hooks in public or private repositories."; `write:repo_hook` = "Grants read, write, and ping access to hooks..."; `read:repo_hook` = "Grants read and ping access to hooks..."           | https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps                                                                                                             | 2026-09-22    |
+| P1 — Escopo `repo` inclui "repository webhooks"                                                                                                                                                                                                                              | https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps                                                                                                             | 2026-09-22    |
+| P1 — Config sub-endpoints: "OAuth app tokens and personal access tokens (classic) need the read:repo_hook or repo scope" / "...write:repo_hook or repo scope..."                                                                                                             | https://docs.github.com/en/rest/repos/webhooks?apiVersion=2022-11-28                                                                                                                             | 2026-09-22    |
+| P1 (contexto) — "OAuth apps cannot list, view, or edit webhooks that they did not create and users cannot list, view, or edit webhooks that were created by OAuth apps." (documentado para webhooks de **organização**)                                                      | https://docs.github.com/en/rest/orgs/webhooks?apiVersion=2022-11-28                                                                                                                              | 2026-09-22    |
+| P1 — código atual: regex `/already exists/i` + `findGitHubWebhookByUrl` + `patchGitHubWebhook`                                                                                                                                                                               | `apps/web/src/integrations/github/server/index.ts:62-68`                                                                                                                                         | 2026-09-22    |
+| P2 — "A maximum of 100 webhooks per app per tenant is allowed for a Connect app. For an OAuth 2.0 app, the limit is 5 webhooks per app per user on a tenant."                                                                                                                | https://developer.atlassian.com/cloud/jira/platform/webhooks/                                                                                                                                    | 2026-09-22    |
+| P2 — "The URL that specifies where to send the webhooks. This URL must use the same base URL as the Connect app. Only a single URL per app is allowed to be registered." (`WebhookRegistrationDetails.url`)                                                                  | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`components.schemas.WebhookRegistrationDetails`)                                                                         | 2026-09-22    |
+| P2 — `jqlFilter` obrigatório; "Fields: `issueKey`, `project`, `issuetype`, `status`, `assignee`, `reporter`, `issue.property`, and `cf[id]`... Operators: `=`, `!=`, `IN`, and `NOT IN`."                                                                                    | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`components.schemas.WebhookDetails`)                                                                                     | 2026-09-22    |
+| P2 — Mesma restrição de JQL, redigida na página de plataforma                                                                                                                                                                                                                | https://developer.atlassian.com/cloud/jira/platform/webhooks/                                                                                                                                    | 2026-09-22    |
+| P2 — "Extends the life of webhook. Webhooks registered through the REST API expire after 30 days. Call this operation to keep them alive." (`PUT /rest/api/3/webhook/refresh`)                                                                                               | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/webhook/refresh.put`)                                                                                 | 2026-09-22    |
+| P2 — "The expiration period is 30 days from the time the webhook was created or refreshed..." / "Webhooks are available for up to 3 months after they expire."                                                                                                               | https://developer.atlassian.com/cloud/jira/platform/webhooks/                                                                                                                                    | 2026-09-22    |
+| P2 — `security`/`x-atlassian-oauth2-scopes` = `read:jira-work` + `manage:jira-webhook` (Current) para register/get/delete/refresh; granulares Beta `write:webhook:jira`, `read:webhook:jira`, `delete:webhook:jira`, `read:field:jira`, `read:project:jira`, `read:jql:jira` | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/webhook`, `/rest/api/3/webhook/refresh`)                                                              | 2026-09-22    |
+| P2 — `manage:jira-webhook` = "Fetch, register, refresh, and delete dynamically declared Jira webhooks."                                                                                                                                                                      | https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/                                                                                                       | 2026-09-22    |
+| P2 — `jira:issue_updated` requer `read:issue-details:jira`                                                                                                                                                                                                                   | https://developer.atlassian.com/cloud/jira/platform/webhooks/                                                                                                                                    | 2026-09-22    |
+| P2 — "NOTE: for non-public OAuth apps, webhooks are delivered only if there is a match between the app owner and the user who registered a dynamic webhook."                                                                                                                 | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/webhook.post.description`)                                                                            | 2026-09-22    |
+| P2 — "Only webhooks registered by the calling app are removed. If webhooks created by other apps are specified, they are ignored."                                                                                                                                           | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/webhook.delete.description`)                                                                          | 2026-09-22    |
+| P2 — registro atual usa `project = ${projectRef}` e um `webhooks[0]` por chamada                                                                                                                                                                                             | `apps/web/src/integrations/jira/server/webhook-registration.ts:32-41`                                                                                                                            | 2026-09-22    |
+| P2 — não há chamada a `/rest/api/3/webhook/refresh` no repositório (só `refreshJiraToken`, OAuth token)                                                                                                                                                                      | busca em `apps/web/src` e `packages`                                                                                                                                                             | 2026-09-22    |
+| P3 — exemplo publicado de `jira:issue_updated`: `issue.fields` contém apenas `summary`, `created`, `description`, `labels`, `priority` — **sem** `project` e **sem** `issuetype`                                                                                             | https://developer.atlassian.com/cloud/jira/platform/webhooks/                                                                                                                                    | 2026-09-22    |
+| P3 — "The same shape returned from the Jira REST API when an issue is retrieved with NO expand parameters."                                                                                                                                                                  | https://developer.atlassian.com/cloud/jira/platform/webhooks/                                                                                                                                    | 2026-09-22    |
+| P3 — `getIssue`, parâmetro `fields`: `default: "*all"`, "`*all` Returns all fields." e "Note: All fields are returned by default."                                                                                                                                           | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/issue/{issueIdOrKey}.get.parameters[fields]`)                                                         | 2026-09-22    |
+| P3 — `project` e `issuetype` são campos de `fields` endereçados por `id`: exemplo oficial de `createIssue` traz `"project": {"id": "10000"}` e `"issuetype": {"id": "10000"}`                                                                                                | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`paths./rest/api/3/issue.post.requestBody.example`)                                                                      | 2026-09-22    |
+| P3 — `IssueBean.fields` é mapa livre (`{"additionalProperties": {}, "type": "object"}`): o contrato oficial não enumera os campos da resposta                                                                                                                                | https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json (`components.schemas.IssueBean`)                                                                                          | 2026-09-22    |
+| P3 — o exemplo oficial de `jira:issue_updated` mostra changelog de **mudança de issue type**: `{"toString":"New Feature","to":"2","fromString":"Improvement","from":"4","fieldtype":"jira","field":"issuetype"}`                                                             | https://developer.atlassian.com/cloud/jira/platform/webhooks/                                                                                                                                    | 2026-09-22    |
+| P3 — destino Jira é hoje `projectId:issueTypeId`; handler inbound lê apenas `payload.issue.key` e não emite destino                                                                                                                                                          | `apps/web/src/integrations/jira/server/hook.ts:19-28`, `issues.ts:64-74`, `inbound.ts:66-72`                                                                                                     | 2026-09-22    |
+| P4 — `per_page`: "The number of results per page (max 100)", default `30`; `page` default `1`                                                                                                                                                                                | https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user                                                                                   | 2026-09-22    |
+| P4 — `visibility` default `all`; `affiliation` default `owner,collaborator,organization_member`; `type` default `all`                                                                                                                                                        | https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user                                                                                   | 2026-09-22    |
+| P4 — `type`: "Will cause a 422 error if used in the same request as visibility or affiliation."                                                                                                                                                                              | https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-the-authenticated-user                                                                                   | 2026-09-22    |
+| P4 — header `link` com `rel` `next`/`prev`/`first`/`last`; "You can use the URLs from the `link` header to request another page of results."                                                                                                                                 | https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28                                                                                        | 2026-09-22    |
+| P4 — "If you specify a value greater than the maximum, GitHub does not return an error. Instead, the value is automatically reduced to the maximum."                                                                                                                         | https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28                                                                                        | 2026-09-22    |
+| P4 — chamada única sem paginação, header `link` ignorado                                                                                                                                                                                                                     | `apps/web/src/integrations/github/server/repos.ts:13-36`                                                                                                                                         | 2026-09-22    |
 
 ## Incertezas restantes
 
@@ -395,3 +401,72 @@ como **contestada entre duas fontes oficiais**, não como fato estabelecido, cas
 com necessidade de chamar periodicamente o refresh foram ambos reconfirmados verbatim em
 https://developer.atlassian.com/cloud/jira/platform/webhooks/. A ausência de qualquer chamada a
 `/rest/api/3/webhook/refresh` no repositório foi reconfirmada por busca direta. **R3 procede.**
+
+## Adendo 2026-09-25 — contrato exato dos endpoints de webhook (para T-010)
+
+As páginas HTML da Atlassian truncam em qualquer leitura via fetch. Este adendo vem do OpenAPI oficial baixado
+inteiro (`swagger-v3.v3.json`, 2.473.752 bytes, consultado em 2026-09-25) e lido programaticamente — não de
+exemplo em prosa.
+
+### `PUT /rest/api/3/webhook/refresh`
+
+- Request: `ContainerForWebhookIDs` — `{ "webhookIds": number[] }`, `required: ["webhookIds"]`,
+  `additionalProperties: false`, itens `integer/int64`. **Sem `maxItems` declarado.**
+- Respostas documentadas: **200**, **400** ("Returned if the request is invalid"), **403** ("Returned if the
+  caller isn't an app"). Não há 401/404 documentados.
+- Escopos: `read:jira-work` + `manage:jira-webhook` (Current) — **os mesmos do registro**, então T-010 não exige
+  escopo novo.
+
+**Contradição na própria spec, que o implementador precisa tratar:** o schema `WebhooksExpirationDate` declara
+`expirationDate` como `integer`/`int64`, mas o `example` do mesmo endpoint mostra
+`{"expirationDate":"2019-06-01T12:42:30.000+0000"}` — uma **string ISO**. As duas afirmações são oficiais e
+incompatíveis. Consequência: código que assuma um dos dois tipos quebra quando a API entregar o outro. O caminho
+seguro é não depender do campo para decidir sucesso (o status 200 já decide) e, se for registrá-lo, aceitar
+número e string.
+
+### `GET /rest/api/3/webhook` — muda o desenho do T-010
+
+Existe, é paginado (`startAt`, `maxResults`), devolve `PageBeanWebhook` de `Webhook`:
+
+| campo            | tipo                       |
+| ---------------- | -------------------------- |
+| `id`             | `integer/int64` (required) |
+| `url`            | `string` (required)        |
+| `jqlFilter`      | `string` (required)        |
+| `events`         | `array` (required)         |
+| `expirationDate` | `integer/int64` (opcional) |
+
+Escopos idênticos aos demais. Combinado com a nota já registrada acima — "Only webhooks registered by the calling
+app are removed. If webhooks created by other apps are specified, they are ignored" — a listagem é **restrita aos
+webhooks do próprio app**.
+
+Isso torna o T-010 melhor do que o desenho original: em vez de renovar cegamente o `config.externalWebhookId`
+gravado localmente, o job pode **listar o que de fato existe do lado do Jira**, ver o `expirationDate` real de
+cada um, e renovar esses ids. Isso cobre de graça três casos que o desenho baseado em config não cobre —
+`externalWebhookId` divergente do remoto, webhook removido manualmente no Jira, e webhook já expirado (que
+precisa de re-registro, não de refresh).
+
+~~**Incerteza que permanece:** não há, no OpenAPI, afirmação sobre o que `refresh` faz com um id que não pertence
+ao app ou não existe — só o 400 genérico. A nota de "ignora ids de outros apps" está documentada para o
+**DELETE**, não para o refresh. Não assuma simetria.~~
+
+**Correção 2026-09-25 — o parágrafo acima estava errado.** Eu havia lido apenas o schema e os códigos de
+resposta, não a `description` do endpoint. Ela afirma o contrário, verbatim:
+
+> Extends the life of webhook. Webhooks registered through the REST API expire after 30 days. Call this
+> operation to keep them alive.
+>
+> **Unrecognized webhook IDs (those that are not found or belong to other apps) are ignored.**
+>
+> **Permissions required:** Only Connect and OAuth 2.0 apps can use this operation.
+
+(`paths./rest/api/3/webhook/refresh.put.description`, mesma cópia do OpenAPI, relida em 2026-09-25.)
+
+A simetria com o DELETE é **documentada, não inferida**. Consequências concretas:
+
+- Um webhook removido manualmente no Jira, ou já expirado e colhido, **não** faz o refresh falhar — é ignorado.
+  Isso sustenta o critério de aceite 2 do T-010 (renovação idempotente e tolerante a webhook ausente) sem
+  precisar de pré-verificação.
+- O 403 documentado ("Returned if the caller isn't an app") é sobre a natureza do chamador, não sobre posse dos
+  ids. Um 403 no refresh significa credencial/app errado, não "esse id não é seu" — distinção que importa para
+  a mensagem que vai parar no `lastError`.

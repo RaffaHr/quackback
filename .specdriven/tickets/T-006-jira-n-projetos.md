@@ -79,3 +79,44 @@ responde isso em minutos.** Se não concluir, é bug atual de produção e vira 
 - Construção do `jqlFilter` com N projetos, incluindo N=1 e o caso de remoção que deixa o conjunto vazio (o que
   deve **remover** o webhook, não registrar um filtro vazio).
 - Ordem register-antes-de-delete: teste que prova que uma falha no registro do novo **não** remove o antigo.
+
+## Adendo 2026-09-25 — este ticket herda a separação de identidade do Jira (vinda do T-001)
+
+A decisão D-4 (identidade do destino Jira = projeto, sem issue type) e a D-6 (reescrever o `sync_scope` dos links
+Jira) estavam alocadas no T-001. Foram **movidas para cá**, porque aplicadas lá quebrariam o Jira em produção — ver
+"Execução 2026-09-25 (3)" do T-001 para o diagnóstico completo.
+
+O motivo, curto: o issue type do Jira vive **só** dentro da string `projectId:issueTypeId`. Nada o grava no config
+da instalação. Tanto `jira/server/hook.ts:57` quanto `jira/server/issues.ts:73` o extraem da string. Tirar o
+issue type da identidade sem dar a ele outro caminho até o hook faz toda criação de issue sair sem `issuetype`,
+que o Jira exige.
+
+Então estas três metades precisam aterrissar **juntas, neste ticket**, no mesmo deploy:
+
+1. **Identidade.** Os destinos Jira passam de `external_ref = 'projectId:issueTypeId'` para
+   `external_ref = 'projectId'`, com o `issueTypeId` movido para `settings`. Hoje a `0287` os semeia espelhando
+   `config.channelId` exatamente — a separação é uma migração nova, deste ticket.
+2. **O issue type chega ao hook por `settings`.** O alvo continua `{ channelId: <projectId> }` — o planner (S-17)
+   registrou que alterar o formato do alvo muda a chave e quebra o fan-out inbound sem erro nem log. O caminho
+   mais estreito: `executeHookSync` já monta o `config` do hook como `{ ...config, ...secrets, ... }`; mesclar os
+   `settings` do destino ali faz `config.issueTypeId` aparecer, e o `issueTypeId || parsed.issueTypeId` do hook já
+   existente o encontra sem mudança no hook.
+3. **Backfill do `sync_scope`** em TypeScript, com a guarda obrigatória `sync_scope <> ''` (divergência D-c —
+   sem ela `/api/v1/apps/linked` quebra e a classificação NO_API da SPEC-0001 cai). Recalcular a chave em SQL
+   exigiria reimplementar o SHA-256 sobre JSON canônico; o precedente do repositório para backfill de uma vez só é
+   `installs-backfill-queue.ts`.
+
+**Janela de deploy.** Se (1) e (3) não forem atômicos — por exemplo, migração aplicada e backfill ainda na fila —
+há uma janela em que links Jira não casam. Duas saídas, a decidir no plano deste ticket: rodar o backfill dentro
+do mesmo passo de migração, ou fazer o leitor aceitar temporariamente a chave antiga e a nova (leitura dupla) até o
+backfill confirmar. A segunda é o padrão para migração sem downtime; a primeira é mais simples se o backfill for
+rápido.
+
+Critérios de aceite adicionais:
+
+- [ ] Depois da separação, criar issue a partir de um post num destino Jira envia `issuetype` com o id que veio de
+      `settings`. Teste que prove, com o hook real, que o tipo não se perdeu.
+- [ ] Um link Jira criado antes da separação é encontrado pelo fan-out inbound depois dela.
+- [ ] Linhas `sync_scope = ''` de `integration_type = 'jira'` sobrevivem intactas ao backfill.
+- [ ] Não existe janela, entre migração e backfill, em que um link Jira existente deixe de casar — ou, se existir,
+      ela está documentada com duração limitada e a leitura dupla a cobre.

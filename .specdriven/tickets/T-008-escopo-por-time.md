@@ -61,6 +61,29 @@ Critérios de aceite revisados (substituem os equivalentes acima):
 
 ### Notas adicionais
 
+- **Restrição estrutural (planner, 2026-09-23):** `lib/server/policy/authz-matrix/__tests__/scan.test.ts` afirma
+  que **todo** gate do tipo `alias` vive em `lib/server/functions/moderation.ts`
+  (`expect(aliases.every((g) => g.file === 'lib/server/functions/moderation.ts')).toBe(true)`). Implementar o gate
+  por time como alias `requireTeamAuth` fora dali quebra esse teste. Decidir a forma do gate faz parte deste
+  ticket.
+- **Alcance real menor do que a spec sugeria:** não existe push manual de post hoje, então este ticket escopa
+  apenas o caminho de **ticket** (`TICKET_ASSIGN`). O caminho de post é criado em
+  [T-011](T-011-push-manual-de-post.md), que depende deste.
 - A associação de destino usa `team_members` para resolver os times do ator
   (`packages/db/src/schema/teams.ts:92`), não `principal_role_assignments` — este é sobre grants de papel, aquele
   sobre pertencimento. Confirmar essa escolha com o planner.
+
+## Adendo 2026-09-25 — invariante herdado do T-001
+
+O T-001 deveria garantir que **`scope = 'teams'` exige ao menos uma associação de time**. Não garantiu, e o motivo é
+estrutural: o invariante atravessa `integration_destinations` e `integration_destination_teams`, então não cabe num
+`CHECK` — o que existe hoje (`integration_destinations_scope_known`) só garante que `scope` seja `workspace` ou
+`teams`.
+
+Nada grava `'teams'` antes deste ticket, então o invariante pertence ao caminho de escrita que este ticket cria.
+
+- [ ] Não existe caminho de escrita que deixe um destino com `scope = 'teams'` e zero associações. Duas formas
+      aceitáveis, a decidir no plano: validação no serviço que escreve destino + times **na mesma transação**, ou
+      trigger com `DEFERRABLE INITIALLY DEFERRED` (para permitir inserir o destino e depois os times dentro da
+      transação). A primeira é mais simples e testável; a segunda também protege escrita direta no banco.
+- [ ] Remover o último time de um destino `teams` é recusado, ou converte o destino — nunca o deixa inacessível.

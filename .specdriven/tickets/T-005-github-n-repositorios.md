@@ -51,7 +51,7 @@ ligado ao repositório B — e não o post que por acaso também tem uma issue `
 
 O que a pesquisa confirmou e o que ela endureceu:
 
-- **O limite do GitHub não é risco.** São 20 webhooks *por tipo de evento, por repositório*, e cada destino é um
+- **O limite do GitHub não é risco.** São 20 webhooks _por tipo de evento, por repositório_, e cada destino é um
   repositório distinto. "Um webhook por destino" segue válido para o GitHub — ao contrário do Jira (ver T-006).
 - **O escopo OAuth pedido é `repo`** (`integrations/github/server/oauth.ts:29`), que concede delete de webhook. O
   critério de aceite 5 não está em risco. Restrição a não regredir: trocar por `write:repo_hook` quebraria a
@@ -66,8 +66,22 @@ Critério de aceite adicional:
       Hoje o `Error` lançado por `registerGitHubWebhook` descarta o status e só carrega a string.
 - [ ] `findGitHubWebhookByUrl` pagina (mesmo defeito de T-009: `per_page=100` sem seguir o header `link`).
 
-Risco em aberto, registrado como incerteza em R-0002 e não resolvido: a nota *"OAuth apps cannot list, view, or
-edit webhooks that they did not create"* está documentada verbatim para webhooks de **organização**, e não foi
+Risco em aberto, registrado como incerteza em R-0002 e não resolvido: a nota _"OAuth apps cannot list, view, or
+edit webhooks that they did not create"_ está documentada verbatim para webhooks de **organização**, e não foi
 encontrada na página de webhooks de **repositório**. Se valer também para repositórios, nenhum dos dois caminhos
 acima recupera de um hook criado por uma pessoa na UI do GitHub com a mesma URL — e o comportamento correto passa a
 ser falhar com mensagem acionável para o admin, não silenciar.
+
+## Adendo 2026-09-25 — duas exigências vindas da correção de regressão do T-001
+
+Ver "Correção 2026-09-25" no T-001. Este ticket substitui a tela de seleção única, então herda:
+
+- [ ] **A tela nova não escreve `config.channelId`.** Enquanto for escrito, `syncLegacyDestination` o espelha na
+      linha — e qualquer mudança nele altera o hash de `canDispatchSync` e cancela **todas** as operações em voo da
+      instalação. Gestão de destinos passa só pela tabela. É o que realiza plenamente o objetivo do T-004.
+- [ ] **Remover o último destino não o ressuscita.** Sem linha, o leitor cai no fallback de `config.channelId`. Se
+      ele ainda apontar para o destino removido, as entregas continuam. O caminho de remoção limpa o
+      `config.channelId` na mesma transação, ou o leitor para de cair no fallback para instalações já migradas.
+      Teste obrigatório: remover o último destino e provar que nenhuma entrega é despachada para ele.
+- [ ] A recusa `DESTINATIONS_MANAGED_ELSEWHERE` de `syncLegacyDestination` continua valendo para qualquer escrita
+      legada que sobreviva — ela é o que impede a tela antiga de corromper uma instalação com N destinos.
