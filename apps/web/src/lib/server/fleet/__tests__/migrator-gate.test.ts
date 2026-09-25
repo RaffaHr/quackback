@@ -361,6 +361,7 @@ describe('replayGateVerdict', () => {
       '0284_integration_sync',
       '0285_integration_link_scope',
       '0286_integration_sync_privacy',
+      '0287_integration_destinations',
     ])
     const verdict = replayGateVerdict(before, verdictsFor(replaySetFor(before)), false)
     expect(verdict.ok).toBe(false)

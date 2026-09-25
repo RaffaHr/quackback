@@ -103,6 +103,12 @@ export type IntegrationId = TypeId<'integration'>
 /** Platform credential ID - e.g., platform_cred_01h455vb4pex5vsknk084sn02q */
 export type PlatformCredentialId = TypeId<'platform_cred'>
 
+/** Integration destination ID - e.g., integration_destination_01h455vb4pex5vsknk084sn02q */
+export type IntegrationDestinationId = TypeId<'integration_destination'>
+
+/** Integration destination/team link ID - e.g., integration_destination_team_01h455vb4pex5vsknk084sn02q */
+export type IntegrationDestinationTeamId = TypeId<'integration_destination_team'>
+
 /** Event mapping ID - e.g., event_mapping_01h455vb4pex5vsknk084sn02q */
 export type EventMappingId = TypeId<'event_mapping'>
 
@@ -503,6 +509,8 @@ export interface EntityIdMap {
   conversation_summary: ConversationSummaryId
   conversation_message_translation: ConversationMessageTranslationId
   integration: IntegrationId
+  integration_destination: IntegrationDestinationId
+  integration_destination_team: IntegrationDestinationTeamId
   platform_cred: PlatformCredentialId
   event_mapping: EventMappingId
   post_external_link: PostExternalLinkId
