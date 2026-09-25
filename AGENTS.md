@@ -63,12 +63,12 @@ destrutiva continuam sendo decisão do usuário.
 
 ## Comandos de quality
 
-| Gate | web | widget | db |
-|---|---|---|---|
-| lint | `bun run lint` | `bun run --cwd ../.. lint packages/widget` | `bun run --cwd ../.. lint packages/db` |
-| typecheck | `bun run typecheck` | `bun run typecheck` | `bun run typecheck` |
-| build | widget build → `bun run build` | `bun run build` | — (pacote consumido como fonte) |
-| unit | `bun run --cwd ../.. test --run apps/web` | `bun run test` | `bun run --cwd ../.. test --run packages/db` |
+| Gate      | web                                       | widget                                     | db                                           |
+| --------- | ----------------------------------------- | ------------------------------------------ | -------------------------------------------- |
+| lint      | `bun run lint`                            | `bun run --cwd ../.. lint packages/widget` | `bun run --cwd ../.. lint packages/db`       |
+| typecheck | `bun run typecheck`                       | `bun run typecheck`                        | `bun run typecheck`                          |
+| build     | widget build → `bun run build`            | `bun run build`                            | — (pacote consumido como fonte)              |
+| unit      | `bun run --cwd ../.. test --run apps/web` | `bun run test`                             | `bun run --cwd ../.. test --run packages/db` |
 
 Não obrigatórios hoje: **coverage** (nenhum provider `@vitest/coverage-*` instalado), **integration**
 (`test:api` exige Postgres + servidor live) e **e2e** (Playwright exige Postgres + dev server em
@@ -81,6 +81,24 @@ registra `N/A` — nunca `PASS`.
 
 Pré-requisito de ambiente: Bun 1.4.0 e `bun install`. Sem `bun` no PATH os gates retornam
 `MISSING_CAPABILITY` — comportamento correto, não falha de configuração.
+
+### A quarta entrada `root`
+
+`.specdriven/repositories.json` declara um quarto repositório, `root`, apontando para a raiz do monorepo,
+com **todos** os gates `required: false` e comandos vazios. Ele não é um consumidor e não aparece em
+`profile.consumers`; existe por duas razões mecânicas:
+
+1. O validador de artefatos upstream resolve `path` relativo às raízes de repositório declaradas. Spec e
+   tickets vivem em `.specdriven/`, na raiz, que não está dentro de `apps/web`, `packages/widget` nem
+   `packages/db`. Sem uma raiz que os contenha, `spec`/`tickets` em `required` fazem intake **e** readiness
+   falharem com `STALE_EVIDENCE` — `READY_FOR_MERGE` fica inalcançável.
+2. O `dirtyHash` de cada repositório é calculado com pathspec escopado ao seu subdiretório. Sem a entrada
+   `root`, mudança em arquivo da raiz — `.specdriven/`, `docs/adr/`, este `AGENTS.md`, `CONTEXT.md`,
+   `package.json` — não altera fingerprint nenhum, e a invalidação por drift que a skill promete não cobre
+   esses arquivos. A entrada `root` fecha esse buraco.
+
+Como todos os gates dela são `required: false` sem `detectPaths`, quality e contract registram `N/A` para
+`root`; ela só carrega fingerprint e resolução de artefato.
 
 ## Worktrees
 

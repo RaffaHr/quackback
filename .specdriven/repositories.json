@@ -124,7 +124,10 @@
           "required": true,
           "detectPaths": [],
           "commands": [
-            { "executable": "bun", "args": ["run", "--cwd", "../..", "test", "--run", "packages/db"] }
+            {
+              "executable": "bun",
+              "args": ["run", "--cwd", "../..", "test", "--run", "packages/db"]
+            }
           ]
         },
         "integration": {
@@ -148,6 +151,20 @@
         "detectPaths": [],
         "commands": []
       }
+    },
+    {
+      "name": "root",
+      "root": "C:/Users/Raffa/Documents/code/quackback",
+      "quality": {
+        "lint": { "required": false, "detectPaths": [], "commands": [] },
+        "typecheck": { "required": false, "detectPaths": [], "commands": [] },
+        "build": { "required": false, "detectPaths": [], "commands": [] },
+        "unit": { "required": false, "detectPaths": [], "commands": [] },
+        "integration": { "required": false, "detectPaths": [], "commands": [] },
+        "e2e": { "required": false, "detectPaths": [], "commands": [] },
+        "coverage": { "required": false, "detectPaths": [], "commands": [] }
+      },
+      "contract": { "required": false, "detectPaths": [], "commands": [] }
     }
   ],
   "workflow": {
