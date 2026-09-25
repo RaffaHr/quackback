@@ -1,4 +1,4 @@
-import { getIntegration } from '@/lib/server/integrations'
+import { listInstallationDestinations } from '@/lib/server/integrations/destinations'
 /**
  * Cascade delete service for post external links.
  *
@@ -135,10 +135,11 @@ export async function executeCascadeDelete(
     const { link, integration } = row
     if (!link.syncScope) continue
     const installation = installationIdentity(integration)
+    // Read through `tx`: archive requests share the post deletion transaction.
     const destination = reviewDestination(
       link,
       integration,
-      getIntegration(integration.integrationType)
+      await listInstallationDestinations(integration, tx)
     )
     await queueSyncOperation(
       {

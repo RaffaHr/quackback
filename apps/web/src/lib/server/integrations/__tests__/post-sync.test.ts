@@ -19,7 +19,7 @@ vi.mock('@/lib/server/db', async (original) => ({
         findFirst: async (_query: { where: unknown }) => {
           // Drizzle predicates are checked in the real PostgreSQL delivery tests; this seam supplies the connection.
           return {
-            id: 'linear',
+            id: 'integration_01m3czyaj8eh18r3nxj4h5xkrs',
             integrationType: 'linear',
             status: 'active',
             connectedAt: null,
@@ -29,6 +29,10 @@ vi.mock('@/lib/server/db', async (original) => ({
       },
     },
     select: () => ({ from: () => ({ innerJoin: () => ({ where: async () => state.links }) }) }),
+    // The destination reader. No rows models an installation not yet in the
+    // destination table, so it falls back to config.channelId — exactly what
+    // review compared against before destinations had a table (T-003).
+    execute: async () => [],
   },
 }))
 vi.mock('../index', () => ({
@@ -46,17 +50,17 @@ const id = createId('post') as PostId
 const target = (channelId = 'team') => ({
   type: 'linear',
   target: { channelId },
-  config: { integrationId: 'linear' },
+  config: { integrationId: 'integration_01m3czyaj8eh18r3nxj4h5xkrs' },
 })
 const link = (externalId: string) => ({
   link: {
     id: externalId,
     externalId,
     externalUrl: `https://linear.app/test/issue/${externalId}`,
-    syncScope: `${installationIdentity({ id: 'linear', connectedAt: null })}:${syncHash(syncDestination({ channelId: 'team' }, { channelId: 'team' }, getIntegration('linear')))}`,
+    syncScope: `${installationIdentity({ id: 'integration_01m3czyaj8eh18r3nxj4h5xkrs', connectedAt: null })}:${syncHash(syncDestination({ channelId: 'team' }, { channelId: 'team' }, getIntegration('linear')))}`,
   },
   integration: {
-    id: 'linear',
+    id: 'integration_01m3czyaj8eh18r3nxj4h5xkrs',
     integrationType: 'linear',
     connectedAt: null,
     status: 'active',

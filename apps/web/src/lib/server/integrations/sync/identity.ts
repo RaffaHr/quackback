@@ -48,20 +48,26 @@ export function syncOperationKey(input: {
   return `sync:${syncHash(input)}`
 }
 
-/** A link from another destination must never be inspected with current destination credentials. */
+/**
+ * Which of the installation's destinations a link belongs to.
+ *
+ * A link must never be inspected with another destination's credentials, so a
+ * link that matches none of them degrades to an unverified envelope rather than
+ * being attributed to the nearest one — degrading is allowed, guessing is not.
+ *
+ * Pure: the caller supplies the installation's destinations, already keyed
+ * (`listInstallationDestinations`). It used to compare against the single
+ * destination `config.channelId` named, which read every link in any other
+ * destination back as unverified.
+ */
 export function reviewDestination(
   link: { id: string; syncScope: string | null },
-  integration: {
-    id: string
-    connectedAt: Date | string | null
-    config: unknown
-    integrationType: string
-  },
-  definition: Pick<IntegrationDefinition, 'destination'> | undefined
+  integration: { id: string; connectedAt: Date | string | null },
+  destinations: readonly { destination: Record<string, unknown>; destinationKey: string }[]
 ) {
-  const config = (integration.config ?? {}) as Record<string, unknown>
-  const destination = syncDestination({ channelId: config.channelId }, config, definition)
-  return link.syncScope === `${installationIdentity(integration)}:${syncHash(destination)}`
-    ? destination
+  const installation = installationIdentity(integration)
+  const match = destinations.find((d) => link.syncScope === `${installation}:${d.destinationKey}`)
+  return match
+    ? match.destination
     : { unverifiedLink: syncHash(link.id), previousScope: syncHash(link.syncScope) }
 }

@@ -27,6 +27,7 @@ import type { SyncClaim, SyncOutcome } from './types'
 import { withSyncTransport } from './transport'
 import { canDispatchSync } from './eligibility'
 import { refreshSyncActor } from './sources'
+import { defaultInstallationDestination, findInstallationDestination } from '../destinations'
 import { realEmail } from '@/lib/shared/anonymous-email'
 
 export function hookSource(data: HookJobData) {
@@ -158,12 +159,22 @@ export async function executeHookSync(
       })
     : null
   const channel = (target as { channelId?: unknown } | null)?.channelId
+  // A mapping written before mappings named their channel means "this
+  // installation's destination". Only those need the lookup, so an install whose
+  // mappings all carry actionConfig.channelId — every Slack channel route — pays
+  // for no query on this per-delivery path.
+  const needsDefault = mappings.some(
+    (m) => !(m.actionConfig as Record<string, unknown> | null)?.channelId
+  )
+  const defaultRef = needsDefault
+    ? (await defaultInstallationDestination(integration))?.externalRef
+    : undefined
   if (
     !mappings.some((m) => {
       const action = m.actionConfig as Record<string, unknown> | null
       const filters = m.filters as { boardIds?: string[] } | null
       return (
-        (action?.channelId || config.channelId) === channel &&
+        (action?.channelId || defaultRef) === channel &&
         (!filters?.boardIds?.length || (!!post && filters.boardIds.includes(post.boardId)))
       )
     })
@@ -233,6 +244,17 @@ export async function executeHookSync(
     return { state: 'failed', errorCode: 'provider_failed' }
   if (!(await canDispatchSync(claim.operation, integration, post?.updatedAt)))
     return { state: 'cancelled', errorCode: 'source_unavailable' }
+  // Same gap tickets.ts closes: the config recheck cannot see a destination
+  // edited during the credential read. Only a delivery authorized through the
+  // installation's default destination targets a table row — an explicit
+  // channel route (every Slack channel) has no row to recheck, and rechecking
+  // it would cancel every such delivery.
+  if (
+    defaultRef !== undefined &&
+    channel === defaultRef &&
+    !(await findInstallationDestination(integration, claim.operation.destinationKey))
+  )
+    return { state: 'cancelled', errorCode: 'installation_changed' }
   if (!(await markSyncDispatched(claim))) return { state: 'cancelled' }
   return withSyncTransport(async () => {
     const result = await hook.run(

@@ -71,7 +71,18 @@ export const updateIntegrationFn = createServerFn({ method: 'POST' })
       updates.config = { ...existingConfig, ...data.config }
     }
 
-    await db.update(integrations).set(updates).where(eq(integrations.id, integrationId))
+    // The settings screens still pin the destination through config.channelId.
+    // Where the destination table is already this installation's source of
+    // truth, the row has to move with that write — and in the same transaction,
+    // so a refused row update leaves config untouched too. See
+    // syncLegacyDestination for the silent cancellation this prevents.
+    const legacyChannelId =
+      typeof data.config?.channelId === 'string' ? data.config.channelId : null
+    const { syncLegacyDestination } = await import('@/lib/server/integrations/destinations')
+    await db.transaction(async (tx) => {
+      await tx.update(integrations).set(updates).where(eq(integrations.id, integrationId))
+      if (legacyChannelId !== null) await syncLegacyDestination(integration, legacyChannelId, tx)
+    })
 
     // Batch upsert all event mappings in a single query
     if (data.eventMappings && data.eventMappings.length > 0) {
