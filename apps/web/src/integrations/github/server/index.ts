@@ -44,6 +44,7 @@ export const githubIntegration: IntegrationDefinition = {
   inbound: githubInboundHandler,
   issues: githubIssues,
   linkedItems: true,
+  multipleDestinations: true,
   webhookRegistration: {
     register: async ({ accessToken, config, callbackUrl, secret }) => {
       const ownerRepo = config.channelId as string

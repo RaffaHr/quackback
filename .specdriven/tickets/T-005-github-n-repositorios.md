@@ -1,7 +1,7 @@
 ---
 id: T-005
 title: GitHub com N repositórios, de ponta a ponta
-status: open
+status: in-progress
 blockedBy: [T-001, T-002, T-004]
 specRef: .specdriven/specs/SPEC-0001-multi-destino-trackers.md
 trackerRef: N/A
@@ -85,3 +85,90 @@ Ver "Correção 2026-09-25" no T-001. Este ticket substitui a tela de seleção 
       Teste obrigatório: remover o último destino e provar que nenhuma entrega é despachada para ele.
 - [ ] A recusa `DESTINATIONS_MANAGED_ELSEWHERE` de `syncLegacyDestination` continua valendo para qualquer escrita
       legada que sobreviva — ela é o que impede a tela antiga de corromper uma instalação com N destinos.
+
+## Adendo 2026-09-25 — decisões de INTAKE que destravam este ticket
+
+**D-8 — Inbox do GitHub: todos os repositórios alimentam o inbox.** (decisão do usuário)
+O canal de inbox (`channel_accounts`, role `connection`) usa o mesmo webhook do repositório, com o evento
+`issue_comment` somado a `issues` quando o inbox está ativo (`githubWebhookEvents(inboxEnabled)`). Com N destinos,
+cada webhook registrado por destino recebe o mesmo conjunto de eventos — não há seleção separada de repositórios
+para o inbox.
+
+- [ ] Registrar um destino com o inbox ativo inclui `issue_comment`; ativar ou desativar o inbox atualiza os
+      eventos dos webhooks de **todos** os destinos, não só de um.
+
+**D-9 — Formato da tela: tabela de destinos própria.** (delegada pelo usuário, decidida pelo orchestrator)
+Uma linha por repositório, com filtro de board por linha e ação de remover; "adicionar" abre um diálogo que usa o
+`DestinationPicker` existente. Formato parecido com o roteador de notificações do Slack, **componente novo** — o
+ADR-0001 e `shared/notification-channel-router.tsx:1-9` proíbem reaproveitar aquele.
+
+Motivo: o roteamento automático da SPEC-0001 é por board, e isso exige filtro de board **por destino** (board
+"Bugs" → `acme/api`, board "Infra" → `acme/ops`). Uma lista simples não tem onde expressar isso.
+
+## Execução 2026-09-25 — fatias 1 e 2 de 5
+
+O ticket foi fatiado em: **(1)** gestão de destinos no servidor, **(2)** segurança de envio e prova de ponta a
+ponta, **(3)** webhooks por destino, **(4)** `parseRef`, **(5)** a tela. Feitas: 1 e 2.
+
+### Três peças que o plano original não tinha
+
+1. **Transição do legado para o gerenciado.** Uma instalação conectada depois da `0287` tem só `config.channelId`
+   e nenhuma linha. Assim que existe uma linha, o leitor para de cair no fallback — então adicionar um segundo
+   repositório sem materializar o primeiro faria **o original parar de receber issues em silêncio**.
+   `addInstallationDestination` materializa o destino legado antes.
+2. **O mapping legado.** O gravado pela tela antiga não tem `actionConfig.channelId`, e o resolver o lê como
+   "`config.channelId`". Ao gerenciar, ele vira mapping explícito do destino primário, **preservando seu filtro de
+   board e seu interruptor** (um mapping legado desligado continua desligado).
+3. **O espelho do primário.** Leitores fora de `sync/` ainda usam `config.channelId` (ticket → issue até o T-007,
+   o inbox). Ele passa a espelhar o **primeiro** destino e só é gravado quando o primário muda — cada escrita no
+   config cancela operações em voo via `canDispatchSync`, então limitar a escrita limita o cancelamento. Remover o
+   último destino **apaga** a chave, e o fallback do leitor não tem o que ressuscitar.
+
+Isso **refina** a exigência deste ticket de "não escrever `config.channelId`": continua não escrito na gestão
+comum, e é escrito só na troca de primário.
+
+### Fatia 1 — `destinations.ts`
+
+`addInstallationDestination`, `removeInstallationDestination`, `setInstallationDestinationBoards`. Cada uma numa
+transação com advisory lock por instalação (duas primeiras adições concorrentes materializariam o legado duas
+vezes). Linhas inseridas com `clock_timestamp()`, não `now()`: dentro de uma transação `now()` é o mesmo instante, e
+o primário é definido pela ordem de criação.
+
+- **Flag de capability `multipleDestinations`**, declarada **só no GitHub**. O Jira fica de fora até o T-006: sem o
+  webhook único com `project IN (...)` e o `destinationId` no inbound, um segundo projeto teria saída funcionando e
+  status sync morto em silêncio.
+- **Validação de referência.** `external_ref` é interpolado em caminhos de API (`repos/${ref}/issues`). A regex de
+  rótulo seguro já existente aceita `../../orgs/acme`; segmentos `..` e `.` agora são recusados.
+
+`__tests__/destination-management.db.test.ts`: 12 casos, vermelhos antes. Três controles positivos — sem
+materializar o legado, sem apagar o espelho, sem recusar `..` — isolaram **exatamente** os testes de cada
+propriedade.
+
+### Fatia 2 — segurança de envio e ponta a ponta
+
+`sync/__tests__/multi-destination.db.test.ts`, pelo resolver, worker e hook reais:
+
+| Critério                                                                                  | Estado                                                                           |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Board roteado a dois repositórios cria uma issue e um link em cada, com escopos distintos | ✅ passou **sem mudança de código** — o resolver já entendia mappings explícitos |
+| `#142` fechado num repositório atinge só o post daquele repositório                       | ✅ passou sem mudança — o inbound do GitHub já filtra pelo destino assinado      |
+| Remover um repositório durante o envio cancela a entrega a ele                            | ❌ → ✅ **corrigido**                                                            |
+
+O terceiro confirmou a lacuna prevista: o recheck do T-004 cobria só entregas pelo destino-padrão, e destinos
+gerenciados roteiam por mapping **explícito** — nenhuma entrega era rechecada. Agora, para providers com
+`multipleDestinations`, toda entrega é rechecada. Controle positivo: sem a extensão, exatamente esse teste fica
+vermelho. Slack/Discord seguem fora do recheck (sem a flag), e o `provider-contracts` continua verde.
+
+### Verificação
+
+Suítes de `integrations` + `jobs` + providers + `events`: verdes, exceto o HubSpot (pré-existente). `tsc` = 821.
+
+**Achado:** `sync/__tests__/ledger.test.ts` ("recovers expired ownership according to dispatch evidence") já falhou
+em duas rodadas diferentes, uma em cada variante (`: false` e `: true`). Passa 3 de 3 isolado e não importa nada do
+que foi tocado. É um teste de lease sensível a tempo sob carga paralela — pré-existente, e vale um ticket próprio.
+
+### Falta
+
+Fatia 3 (webhooks por destino: registrar ao adicionar, remover ao remover, status sync e inbox iterando os
+destinos, compensação, caminho de duplicata), fatia 4 (`parseRef`) e fatia 5 (a tela). As server functions que a
+tela vai chamar entram com a fatia 5.

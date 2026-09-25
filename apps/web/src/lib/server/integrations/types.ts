@@ -295,6 +295,14 @@ export interface IntegrationDefinition {
    */
   userSync?: UserSyncHandler
   /**
+   * The installation can route to several destinations — repositories,
+   * projects — managed as rows in `integration_destinations`, each with its own
+   * board routing. Without it, an installation has the single destination its
+   * `config.channelId` names. Declared only where multi-destination has been
+   * built and verified end to end (SPEC-0001: GitHub, Jira).
+   */
+  multipleDestinations?: true
+  /**
    * Link created items for lifecycle review, including explicit archive/close review
    * on source deletion. Notification receipts stay in sync history without item links.
    */

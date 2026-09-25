@@ -249,9 +249,14 @@ export async function executeHookSync(
   // installation's default destination targets a table row — an explicit
   // channel route (every Slack channel) has no row to recheck, and rechecking
   // it would cancel every such delivery.
+  // For a provider whose destinations are table rows, every delivery targets
+  // one of them — including those routed by an explicit mapping, which is how
+  // managed destinations route — so every delivery is rechecked.
+  const targetsDestinationRow =
+    getIntegration(integration.integrationType)?.multipleDestinations === true ||
+    (defaultRef !== undefined && channel === defaultRef)
   if (
-    defaultRef !== undefined &&
-    channel === defaultRef &&
+    targetsDestinationRow &&
     !(await findInstallationDestination(integration, claim.operation.destinationKey))
   )
     return { state: 'cancelled', errorCode: 'installation_changed' }
