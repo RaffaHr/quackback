@@ -1,0 +1,57 @@
+name: Claude QA Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: claude-qa-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  claude-qa-review:
+    name: Claude QA review
+    # Conditions to start a review: the PR is not a draft and comes from a branch
+    # of this same repository. PRs from forks are skipped on purpose: this job
+    # runs on a self-hosted runner, so it must never execute untrusted fork code.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, claude-review]
+    timeout-minutes: 90
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      QA_AUTO_PUBLISH: "false"
+      CLAUDE_CODE_ENABLE_TELEMETRY: "0"
+      CLAUDE_REVIEW_LABEL: qa/claude-reviewing
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Run Claude Code QA review
+        env:
+          ATLASSIAN_SITE: ${{ secrets.ATLASSIAN_SITE }}
+        run: ywap-qa-pr-review
+
+      - name: Upload QA artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: claude-qa-review-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          path: qa-artifacts/current/
+          if-no-files-found: warn
