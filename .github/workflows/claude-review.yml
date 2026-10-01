@@ -44,13 +44,35 @@ jobs:
       CLAUDE_REVIEW_LABEL: review/claude-reviewing
 
     steps:
+      - name: Resolve and gate PR target
+        id: resolve
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "issue_comment" ]; then
+            gh pr view "${{ github.event.issue.number }}" --repo "$GITHUB_REPOSITORY" \
+              --json headRefOid,headRepositoryOwner > /tmp/pr-target.json
+            HEAD_OWNER="$(jq -r .headRepositoryOwner.login /tmp/pr-target.json)"
+            if [ "$HEAD_OWNER" != "$GITHUB_REPOSITORY_OWNER" ]; then
+              echo "::error::/review refused: PR head comes from fork '$HEAD_OWNER' — self-hosted runner never checks out untrusted code with repo secrets."
+              exit 1
+            fi
+            echo "head_sha=$(jq -r .headRefOid /tmp/pr-target.json)" >> "$GITHUB_OUTPUT"
+          else
+            echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout PR head
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
-          # issue_comment has no pull_request object; refs/pull/<N>/head
-          # resolves the head for same-repo and fork PRs alike.
-          ref: ${{ github.event_name == 'issue_comment' && format('refs/pull/{0}/head', github.event.issue.number) || github.event.pull_request.head.sha }}
+          # Never leave a token in .git/config: only gh (via GH_TOKEN) talks to GitHub.
+          persist-credentials: false
+          # Pin the resolved head SHA — a fork PR is refused above, and a moving
+          # refs/pull/N/head could change between gate and checkout.
+          ref: ${{ steps.resolve.outputs.head_sha }}
 
       - name: Run Claude Code review
         env:
