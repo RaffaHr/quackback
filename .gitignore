@@ -67,7 +67,11 @@ apps/web/next-env.d.ts
 .superpowers/
 docs/superpowers/
 .codex
-.claude/
+.claude/settings.local.json
+
+# Runtime QA artifacts
+qa-artifacts/current/
+qa-artifacts/history/
 
 # Local scratch
 scratchpad/

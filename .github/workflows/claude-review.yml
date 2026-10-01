@@ -1,0 +1,68 @@
+# Reviews this repository's PRs with the ywap-review-workflow installed globally
+# on the self-hosted `claude-review` runner. This repo does not vendor .review/,
+# .claude/ or .mcp.json — `ywap-review-pr` on the runner resolves the target,
+# renders the CI prompt and invokes Claude Code.
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    # Manual trigger: comment `/review` on a PR (trusted authors only — see `if`).
+    types: [created]
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  claude-review:
+    name: Claude Code review
+    # pull_request: skip drafts; self-hosted runner never touches fork PRs
+    # automatically. issue_comment: `/review` on a PR from OWNER/MEMBER/
+    # COLLABORATOR only — arbitrary commenters must not schedule runner work.
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.draft == false &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       startsWith(github.event.comment.body, '/review') &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: [self-hosted, linux, claude-review]
+    timeout-minutes: 90
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REVIEW_AUTO_PUBLISH: 'false'
+      CLAUDE_CODE_ENABLE_TELEMETRY: '0'
+      CLAUDE_REVIEW_LABEL: review/claude-reviewing
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          # issue_comment has no pull_request object; refs/pull/<N>/head
+          # resolves the head for same-repo and fork PRs alike.
+          ref: ${{ github.event_name == 'issue_comment' && format('refs/pull/{0}/head', github.event.issue.number) || github.event.pull_request.head.sha }}
+
+      - name: Run Claude Code review
+        env:
+          # Repo secret; alternative: `claude` auth persisted in the runner's /home/runner volume.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ATLASSIAN_SITE: ${{ secrets.ATLASSIAN_SITE }}
+        run: ywap-review-pr
+
+      - name: Upload review artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: claude-review-${{ github.event.pull_request.number || github.event.issue.number }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: review-artifacts/current/
+          if-no-files-found: warn
