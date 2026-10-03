@@ -295,6 +295,14 @@ export interface IntegrationDefinition {
    */
   userSync?: UserSyncHandler
   /**
+   * The installation can route to several destinations — repositories,
+   * projects — managed as rows in `integration_destinations`, each with its own
+   * board routing. Without it, an installation has the single destination its
+   * `config.channelId` names. Declared only where multi-destination has been
+   * built and verified end to end (SPEC-0001: GitHub, Jira).
+   */
+  multipleDestinations?: true
+  /**
    * Link created items for lifecycle review, including explicit archive/close review
    * on source deletion. Notification receipts stay in sync history without item links.
    */
@@ -390,6 +398,28 @@ export interface IntegrationDefinition {
           config: Record<string, unknown>
           externalWebhookId: string
         }): Promise<void>
+        /**
+         * Extend the life of registrations that expire on their own. Jira's
+         * dynamic webhooks die after 30 days unless refreshed, and the failure
+         * is silent: deliveries just stop. Declared per provider because most
+         * providers' webhooks do not expire at all.
+         *
+         * Returns rather than throws — this runs in a periodic sweep, and the
+         * error text is what reaches `lastError` for the health panel.
+         *
+         * `liveWebhookIds` is every webhook the provider still has for this
+         * app. With it, the sweep can tell "nothing to refresh" apart from "the
+         * webhook this installation depends on is gone" — expired and harvested,
+         * or removed by hand — and register it again. Omit it only if the
+         * provider cannot list its webhooks; the sweep then cannot detect loss.
+         */
+        refresh?(params: {
+          accessToken: string
+          config: Record<string, unknown>
+        }): Promise<
+          | { status: 'refreshed' | 'nothing-to-refresh'; liveWebhookIds?: string[] }
+          | { status: 'failed'; error: string }
+        >
       }
   /** Platform-level credential fields required to enable this integration. Use `[]` if none needed. */
   platformCredentials: PlatformCredentialField[]

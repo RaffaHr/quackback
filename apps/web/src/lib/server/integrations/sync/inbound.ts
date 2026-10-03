@@ -20,6 +20,7 @@ import type { SyncClaim, SyncOutcome } from './types'
 import { hasNewerInbound } from './ordering'
 import { getIntegration } from '../index'
 import { getIntegrationAuth } from '../token-refresh'
+import { defaultInstallationDestination } from '../destinations'
 
 /** Persist the authenticated body before any provider reads or enrichment. */
 export async function queueInboundWebhook(
@@ -208,10 +209,14 @@ export async function fanOutInboundStatus(
     getIntegration(op.provider)?.inbound?.statusMode === 'automatic' && !!result.destinationId
   // Missing signed scope is sufficient only for a manual review of an existing
   // link in the current destination. It must never authorize a local update.
+  // Read through `tx`: this runs inside the fan-out transaction.
+  const fallback = result.destinationId
+    ? null
+    : await defaultInstallationDestination(integration, tx)
   const destination = result.destinationId
     ? op.destination
     : syncDestination(
-        { channelId: config.channelId },
+        { channelId: fallback?.externalRef },
         config,
         getIntegration(integration.integrationType)
       )

@@ -1,4 +1,4 @@
-import { getIntegration } from '@/lib/server/integrations'
+import { listInstallationDestinations } from '../destinations'
 import { eq, and, sql, integrations, postExternalLinks, ticketExternalLinks } from '@/lib/server/db'
 import type { IntegrationId } from '@quackback/ids'
 import type { HookJobData } from '@/lib/server/events/hook-job'
@@ -50,13 +50,17 @@ export async function queueStatusSync(data: HookJobData, tx: JobSqlExecutor) {
   if (!link.sync_scope) return null
   const destination = reviewDestination(
     { id: target.linkId, syncScope: link.sync_scope },
-    {
-      id: integrationId,
-      connectedAt: integration?.connected_at ?? null,
-      config,
-      integrationType: integration?.integration_type ?? 'unknown',
-    },
-    getIntegration(integration?.integration_type ?? '')
+    { id: integrationId, connectedAt: integration?.connected_at ?? null },
+    // Through `tx`: this runs inside the caller's transaction, and the job
+    // executor it holds offers only `execute` — which is all the reader needs.
+    await listInstallationDestinations(
+      {
+        id: integrationId as IntegrationId,
+        config,
+        integrationType: integration?.integration_type ?? 'unknown',
+      },
+      tx
+    )
   )
   return queueSyncOperation(
     {

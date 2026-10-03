@@ -7,6 +7,7 @@ import type { PostCreatedEvent } from '@/lib/server/events/types'
 import { queueHookSync } from './sync/hooks'
 import { queueSyncOperation } from './sync/ledger'
 import { getIntegration } from './index'
+import { listInstallationDestinations } from './destinations'
 import {
   installationIdentity,
   syncHash,
@@ -90,7 +91,7 @@ export async function syncPostIntegrations(
       const destination = reviewDestination(
         link,
         integration,
-        getIntegration(integration.integrationType)
+        await listInstallationDestinations(integration)
       )
       results.push(
         await queueSyncOperation({

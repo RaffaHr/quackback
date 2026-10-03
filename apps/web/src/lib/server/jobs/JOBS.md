@@ -356,6 +356,7 @@ went stale the moment a queue moved.
 | ------------------------------- | -------------- | ----------- | -------- | ----- |
 | `slack-hook`                    | —              | 1           | 3        | 60s   |
 | `integration-deliveries-sweep`  | `0 3 * * *`    | 1           | 1        | 60s   |
+| `integration-webhook-refresh`   | `40 3 * * *`   | 1           | 3        | 60s   |
 | `integration-install-cleanup`   | —              | 1           | 1        | 60s   |
 | `integration-installs-backfill` | —              | 1           | 1        | 60s   |
 | `anon-sweep`                    | `0 3 * * *`    | 1           | 3        | 60s   |

@@ -183,6 +183,17 @@ export const JOB_DEFINITIONS: readonly JobDefinition[] = [
       (await import('@/lib/server/integrations/deliveries-sweep-queue')).runDeliveriesSweep,
   },
   {
+    // Jira's dynamic webhooks expire 30 days after their last refresh, silently.
+    // Daily leaves ~29 days of runway, so worker downtime cannot cost a webhook.
+    name: 'integration-webhook-refresh',
+    cron: '40 3 * * *',
+    // Idempotent (unrecognized ids are ignored server-side), so a transient
+    // failure should retry rather than wait a whole day for the next slot.
+    maxAttempts: 3,
+    handler: async () =>
+      (await import('@/lib/server/integrations/webhook-refresh-queue')).runWebhookRefresh,
+  },
+  {
     name: 'integration-install-cleanup',
     concurrency: 1,
     handler: async () =>

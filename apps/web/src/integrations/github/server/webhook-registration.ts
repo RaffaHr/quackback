@@ -1,3 +1,5 @@
+import { integrationFetch } from '@/lib/server/integrations/sync/transport'
+import { nextPageUrl } from '@/integrations/github/server/pagination'
 /**
  * GitHub webhook registration.
  *
@@ -5,6 +7,13 @@
  */
 
 const GITHUB_API = 'https://api.github.com'
+
+/**
+ * Hook listing is paginated like every GitHub list endpoint, and the only
+ * end-of-list signal is the absence of `link` `rel="next"`. Traversal is
+ * bounded here: 20 pages is 2000 hooks on a single repository.
+ */
+const MAX_HOOK_PAGES = 20
 
 interface GitHubWebhookResult {
   webhookId: string
@@ -83,18 +92,41 @@ export async function patchGitHubWebhook(
   }
 }
 
+/**
+ * Locate an existing hook by callback URL, walking `link` `rel="next"`.
+ *
+ * A hook past the first page used to read back as "no hook", which is the
+ * dangerous direction: the caller then registers a duplicate. Exhausting the
+ * page budget throws for the same reason — a `null` there would be a lie.
+ */
 export async function findGitHubWebhookByUrl(
   accessToken: string,
   ownerRepo: string,
   callbackUrl: string
 ): Promise<string | null> {
-  const response = await fetch(`${GITHUB_API}/repos/${ownerRepo}/hooks?per_page=100`, {
-    headers: githubHeaders(accessToken),
-  })
-  if (!response.ok) return null
-  const hooks = (await response.json()) as Array<{ id: number; config?: { url?: string } }>
-  const match = hooks.find((h) => h.config?.url === callbackUrl)
-  return match ? String(match.id) : null
+  let nextUrl: string | null = `${GITHUB_API}/repos/${ownerRepo}/hooks?per_page=100`
+  let pages = 0
+
+  while (nextUrl) {
+    if (pages >= MAX_HOOK_PAGES) {
+      throw new Error(
+        `GitHub still reported more webhooks on ${ownerRepo} after ${MAX_HOOK_PAGES} pages ` +
+          `(${MAX_HOOK_PAGES * 100}+). Reporting "not found" here would register a duplicate ` +
+          'hook: remove the unused webhooks on that repository, then retry.'
+      )
+    }
+
+    const response = await integrationFetch(nextUrl, { headers: githubHeaders(accessToken) })
+    if (!response.ok) return null
+    const hooks = (await response.json()) as Array<{ id: number; config?: { url?: string } }>
+    const match = hooks.find((h) => h.config?.url === callbackUrl)
+    if (match) return String(match.id)
+
+    nextUrl = nextPageUrl(response)
+    pages++
+  }
+
+  return null
 }
 
 /**

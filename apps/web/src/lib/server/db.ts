@@ -270,6 +270,10 @@ export {
   integrationPlatformCredentialsRelations,
   integrations,
   integrationsRelations,
+  integrationDestinations,
+  integrationDestinationsRelations,
+  integrationDestinationTeams,
+  integrationDestinationTeamsRelations,
   // Schema tables - external links
   postExternalLinks,
   postExternalLinksRelations,

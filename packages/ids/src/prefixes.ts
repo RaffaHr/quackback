@@ -114,6 +114,8 @@ export const ID_PREFIXES = {
 
   // Integrations
   integration: 'integration',
+  integration_destination: 'integration_destination',
+  integration_destination_team: 'integration_destination_team',
   platform_cred: 'platform_cred',
   event_mapping: 'event_mapping',
   post_external_link: 'post_external_link',
